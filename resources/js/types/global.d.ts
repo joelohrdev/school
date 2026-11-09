@@ -12,6 +12,8 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            unreadAlerts: number;
+            kids: { id: number; name: string }[];
             [key: string]: unknown;
         };
     }

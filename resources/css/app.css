@@ -45,6 +45,13 @@
     --color-input: var(--input);
     --color-ring: var(--ring);
 
+    --color-grade-line: var(--grade-line);
+    --color-missing: var(--missing);
+    --color-missing-soft: var(--missing-soft);
+    --color-late: var(--late);
+    --color-late-soft: var(--late-soft);
+    --color-good: var(--good);
+    --color-good-soft: var(--good-soft);
     --color-chart-1: var(--chart-1);
     --color-chart-2: var(--chart-2);
     --color-chart-3: var(--chart-3);
@@ -81,6 +88,15 @@
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
     --ring: oklch(0.87 0 0);
+    /* Single-series grade line; validated against both surfaces with the dataviz validator. */
+    --grade-line: #2563eb;
+    /* Status: always shown with an icon and a label, never color alone. */
+    --missing: oklch(0.505 0.213 27.518);
+    --missing-soft: oklch(0.971 0.013 17.38);
+    --late: oklch(0.555 0.163 48.998);
+    --late-soft: oklch(0.987 0.022 95.277);
+    --good: oklch(0.527 0.154 150.069);
+    --good-soft: oklch(0.982 0.018 155.826);
     --chart-1: oklch(0.646 0.222 41.116);
     --chart-2: oklch(0.6 0.118 184.704);
     --chart-3: oklch(0.398 0.07 227.392);
@@ -117,6 +133,13 @@
     --border: oklch(0.269 0 0);
     --input: oklch(0.269 0 0);
     --ring: oklch(0.439 0 0);
+    --grade-line: #3b82f6;
+    --missing: oklch(0.704 0.191 22.216);
+    --missing-soft: oklch(0.258 0.092 26.042);
+    --late: oklch(0.828 0.189 84.429);
+    --late-soft: oklch(0.279 0.077 45.635);
+    --good: oklch(0.792 0.209 151.711);
+    --good-soft: oklch(0.266 0.065 152.934);
     --chart-1: oklch(0.488 0.243 264.376);
     --chart-2: oklch(0.696 0.17 162.48);
     --chart-3: oklch(0.769 0.188 70.08);

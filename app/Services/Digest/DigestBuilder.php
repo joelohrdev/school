@@ -51,13 +51,13 @@ class DigestBuilder
                 ],
                 'has_news' => $mine->isNotEmpty(),
             ];
-        })->filter(fn (array $s) => $s['has_news'] || $s['still_missing_count'] > 0)->values()->all();
+        })->filter(fn (array $s) => $s['has_news'] || $s['still_missing_count'] > 0)->all();
 
         $all = $alerts->flatten();
 
         return [
-            'alert_ids' => $all->pluck('id')->all(),
-            'students' => $students,
+            'alert_ids' => array_values($all->map(fn (Alert $a): int => $a->id)->all()),
+            'students' => array_values($students),
             'totals' => [
                 'newly_missing' => $all->where('type', Alert::TYPE_MISSING)->count(),
                 'newly_late' => $all->where('type', Alert::TYPE_LATE)->count(),
