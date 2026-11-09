@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Notebook paper with a red margin line and a pen-circled A+, the app's grade mark.
+       Full bleed and kept inside the maskable safe zone, so one image serves every platform. -->
+  <rect width="512" height="512" fill="#f3f6ef"/>
+  <g stroke="#d3e0d6" stroke-width="6">
+    <path d="M0 118H512M0 182H512M0 246H512M0 310H512M0 374H512M0 438H512"/>
+  </g>
+  <path d="M112 0V512" stroke="#e4a3a3" stroke-width="7"/>
+  <g transform="translate(128 132) scale(6.1)" fill="none" stroke="#1f2a44" stroke-linecap="round">
+    <path transform="rotate(-6 26 21)" stroke-width="2.3" d="M30 5C42 5.5 49.5 13 48.5 22.5 47.5 33 36 39 23.5 38 11 37 3 30.5 4 20.5 5 11 14 4.5 26 5.5 33 6 40 9.5 44.5 15"/>
+  </g>
+  <g fill="none" stroke="#1f2a44" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke-width="28" d="M208 318 L256 192 L304 318"/>
+    <path stroke-width="28" d="M227 272 H285"/>
+    <path stroke-width="22" d="M350 218 V276 M321 247 H379"/>
+  </g>
+</svg>
