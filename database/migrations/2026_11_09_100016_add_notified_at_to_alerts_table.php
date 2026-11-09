@@ -17,6 +17,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('alerts', function (Blueprint $table) {
+            // SQLite can't drop a column that still has an index on it.
+            $table->dropIndex(['notified_at']);
             $table->dropColumn('notified_at');
         });
     }
