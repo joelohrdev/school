@@ -19,6 +19,9 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        // Single-user app holding minors' school records: only the first account may register.
+        abort_unless(self::registrationOpen(), 403, 'Registration is closed.');
+
         Validator::make($input, [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
@@ -29,5 +32,10 @@ class CreateNewUser implements CreatesNewUsers
             'email' => $input['email'],
             'password' => $input['password'],
         ]);
+    }
+
+    public static function registrationOpen(): bool
+    {
+        return ! User::query()->exists();
     }
 }
