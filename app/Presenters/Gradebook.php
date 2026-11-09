@@ -5,6 +5,7 @@ namespace App\Presenters;
 use App\Models\Assignment;
 use App\Models\AssignmentScore;
 use App\Models\AttendanceRecord;
+use App\Models\FinalGrade;
 use App\Models\GradeSnapshot;
 use App\Models\Section;
 use App\Models\Student;
@@ -18,6 +19,8 @@ use Carbon\CarbonImmutable;
 class Gradebook
 {
     public const TREND_DAYS = 30;
+
+    public const UPCOMING_DAYS = 7;
 
     public function __construct(private readonly CurrentGradeResolver $grades) {}
 
@@ -51,6 +54,7 @@ class Gradebook
             'missingCount' => count($missing),
             'lateCount' => AssignmentScore::late()->where('student_id', $student->id)->count(),
             'missing' => $missing,
+            'upcoming' => $this->upcoming($student),
             'classes' => $this->classes($student),
         ];
     }
@@ -121,7 +125,71 @@ class Gradebook
                 'course' => $s->assignment->section->course_name,
                 'sectionId' => $s->assignment->section_id,
                 'dueOn' => $s->assignment->due_on?->toDateString(),
-                'daysOverdue' => $s->assignment->due_on === null ? null : max(0, (int) $s->assignment->due_on->diffInDays($today, false)),
+                'daysOverdue' => $s->assignment->due_on === null ? null : max(0, self::calendarDays($s->assignment->due_on, $today)),
+            ])
+            ->all());
+    }
+
+    /**
+     * Work due from today through the next week that isn't graded, missing
+     * or exempt yet, soonest first.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function upcoming(Student $student): array
+    {
+        $today = $this->today();
+
+        return array_values(Assignment::query()
+            ->whereIn('section_id', $student->sections()->select('id'))
+            ->whereBetween('due_on', [$today->toDateString(), $today->addDays(self::UPCOMING_DAYS)->toDateString()])
+            ->with(['section', 'score'])
+            ->orderBy('due_on')
+            ->orderBy('name')
+            ->get()
+            ->reject(fn (Assignment $a) => $a->score !== null && (
+                $a->score->exempt
+                || $a->score->missing
+                || $a->score->score !== null
+                || $a->score->percent !== null
+                || $a->score->letter_grade !== null
+            ))
+            ->map(fn (Assignment $a) => [
+                'id' => $a->id,
+                'name' => $a->name,
+                'course' => $a->section->course_name,
+                'sectionId' => $a->section_id,
+                'dueOn' => $a->due_on?->toDateString(),
+                'daysUntil' => $a->due_on === null ? null : self::calendarDays($today, $a->due_on),
+            ])
+            ->all());
+    }
+
+    /**
+     * Every grade PowerSchool has stored for a class, one per reporting term
+     * (quarters, semesters, the year), earliest term first.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function reportCard(Section $section): array
+    {
+        $current = $this->grades->pick($section->finalGrades, $this->today());
+
+        return array_values($section->finalGrades
+            ->sortBy([
+                fn (FinalGrade $a, FinalGrade $b) => ($a->reportingTerm?->starts_on?->getTimestamp() ?? PHP_INT_MAX) <=> ($b->reportingTerm?->starts_on?->getTimestamp() ?? PHP_INT_MAX),
+                fn (FinalGrade $a, FinalGrade $b) => ($a->reportingTerm?->ends_on?->getTimestamp() ?? PHP_INT_MAX) <=> ($b->reportingTerm?->ends_on?->getTimestamp() ?? PHP_INT_MAX),
+            ])
+            ->map(fn (FinalGrade $g) => [
+                'id' => $g->id,
+                'term' => $g->reportingTerm?->abbreviation,
+                'title' => $g->reportingTerm?->title,
+                'startsOn' => $g->reportingTerm?->starts_on?->toDateString(),
+                'endsOn' => $g->reportingTerm?->ends_on?->toDateString(),
+                'percent' => $g->percent === null ? null : (float) $g->percent,
+                'letter' => $g->letter_grade,
+                'comment' => $g->comment,
+                'current' => $current !== null && $current->is($g),
             ])
             ->all());
     }
@@ -229,5 +297,16 @@ class Gradebook
     public function lastSync(): ?SyncRun
     {
         return SyncRun::query()->where('dry_run', false)->latest('started_at')->latest('id')->first();
+    }
+
+    /**
+     * Whole calendar days from one date to another. Due dates are stored at
+     * UTC midnight and "today" is midnight in the district, so compare the
+     * dates themselves, not the instants.
+     */
+    private static function calendarDays(CarbonImmutable $from, CarbonImmutable $to): int
+    {
+        return (int) CarbonImmutable::parse($from->toDateString(), 'UTC')
+            ->diffInDays(CarbonImmutable::parse($to->toDateString(), 'UTC'), false);
     }
 }

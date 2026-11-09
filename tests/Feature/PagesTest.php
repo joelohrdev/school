@@ -2,6 +2,10 @@
 
 use App\Jobs\SyncPowerSchoolJob;
 use App\Models\Alert;
+use App\Models\Assignment;
+use App\Models\AssignmentScore;
+use App\Models\FinalGrade;
+use App\Models\ReportingTerm;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\SyncRun;
@@ -56,6 +60,26 @@ it('shows one card per kid with missing work and current grades', function () {
         ->where('unreadAlerts', 0));
 });
 
+it('lists work due this week that is not graded, missing or exempt', function () {
+    $math = Section::where('ps_id', 401)->sole();
+    $due = fn (string $name, string $on) => Assignment::create(['section_id' => $math->id, 'ps_id' => crc32($name), 'name' => $name, 'due_on' => $on]);
+
+    $due('Chapter 4 review', '2026-11-11');
+    $due('Due today', '2026-11-09');
+    $due('Too far out', '2026-11-20');
+    $due('Already past', '2026-11-08');
+    $graded = $due('Already graded', '2026-11-10');
+    AssignmentScore::create(['student_id' => $math->student_id, 'assignment_id' => $graded->id, 'ps_id' => 1, 'score' => '9']);
+
+    $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+        ->has('students.0.upcoming', 2)
+        ->where('students.0.upcoming.0.name', 'Due today')
+        ->where('students.0.upcoming.0.daysUntil', 0)
+        ->where('students.0.upcoming.1.name', 'Chapter 4 review')
+        ->where('students.0.upcoming.1.daysUntil', 2)
+        ->has('students.1.upcoming', 0));
+});
+
 it('shows a kid with classes, assignments and attendance', function () {
     $avery = Student::where('ps_id', 1001)->sole();
 
@@ -81,6 +105,22 @@ it('shows a class with its history and assignments', function () {
         ->has('assignments', 1)
         ->where('assignments.0.category', 'Homework')
         ->where('student.name', 'Avery'));
+});
+
+it('shows every term on the report card, earliest first', function () {
+    $math = Section::where('ps_id', 401)->sole();
+    $q1 = ReportingTerm::create(['ps_id' => 76, 'abbreviation' => 'Q1', 'title' => 'Quarter 1', 'starts_on' => '2026-08-20', 'ends_on' => '2026-10-17']);
+    FinalGrade::create(['student_id' => $math->student_id, 'section_id' => $math->id, 'reporting_term_id' => $q1->id, 'ps_id' => 4999, 'percent' => 88, 'letter_grade' => 'B+', 'comment' => 'Strong start']);
+
+    $this->get(route('sections.show', $math))->assertInertia(fn (Assert $page) => $page
+        ->has('reportCard', 2)
+        ->where('reportCard.0.term', 'Q1')
+        ->where('reportCard.0.letter', 'B+')
+        ->where('reportCard.0.comment', 'Strong start')
+        ->where('reportCard.0.current', false)
+        ->where('reportCard.1.term', 'Q2')
+        ->where('reportCard.1.percent', 74.5)
+        ->where('reportCard.1.current', true));
 });
 
 it('lists alerts, filters unread, and marks them read', function () {

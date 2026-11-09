@@ -41,6 +41,11 @@ class DemoSeeder extends Seeder
 
         User::factory()->create(['name' => 'Demo Parent', 'email' => 'demo@example.test', 'password' => 'demo-password']);
 
+        $q1 = ReportingTerm::create([
+            'ps_id' => 76, 'abbreviation' => 'Q1', 'title' => 'Quarter 1',
+            'starts_on' => $today->subDays(90), 'ends_on' => $today->subDays(26), 'sort_order' => 1,
+        ]);
+
         $term = ReportingTerm::create([
             'ps_id' => 77, 'abbreviation' => 'Q2', 'title' => 'Quarter 2',
             'starts_on' => $today->subDays(25), 'ends_on' => $today->addDays(40), 'sort_order' => 2,
@@ -101,6 +106,24 @@ class DemoSeeder extends Seeder
                     'percent' => $percent, 'letter_grade' => $this->letter($percent), 'as_of' => $today,
                 ]);
 
+                $q1Percent = round(min(100, $end - $slope * 40 + 2), 1);
+                FinalGrade::create([
+                    'student_id' => $student->id, 'section_id' => $section->id, 'reporting_term_id' => $q1->id, 'ps_id' => ++$ids,
+                    'percent' => $q1Percent, 'letter_grade' => $this->letter($q1Percent), 'as_of' => $q1->ends_on,
+                    'comment' => $c === 0 ? 'Works hard; needs to turn homework in on time.' : null,
+                ]);
+
+                foreach ([2, 5] as $ahead) {
+                    if (($c + $ahead) % 3 === 0) {
+                        continue;
+                    }
+
+                    Assignment::create([
+                        'section_id' => $section->id, 'assignment_category_id' => $categories['Homework']->id, 'ps_id' => ++$ids,
+                        'name' => $this->assignmentName($course, 'Homework', 6 + $ahead), 'due_on' => $today->addDays($ahead), 'points_possible' => 10,
+                    ]);
+                }
+
                 foreach (range(1, 6) as $n) {
                     $due = $today->subDays(24 - $n * 4);
                     $category = $categories->values()[$n % 4];
@@ -151,6 +174,12 @@ class DemoSeeder extends Seeder
         ]]);
         Alert::create(['student_id' => $avery->id, 'sync_run_id' => $run->id, 'type' => Alert::TYPE_GRADE_DROP, 'payload' => [
             'section_id' => $math->id, 'course_name' => 'Math 7', 'previous_percent' => 79.5, 'percent' => (float) $math->finalGrades()->value('percent'), 'letter_grade' => 'C', 'drop' => 3.2,
+        ]]);
+        Alert::create(['student_id' => $avery->id, 'sync_run_id' => $run->id, 'type' => Alert::TYPE_ABSENCE, 'payload' => [
+            'date' => $today->subDays(1)->toDateString(), 'code' => 'T', 'description' => 'Tardy',
+        ]]);
+        Alert::create(['student_id' => $avery->id, 'sync_run_id' => $run->id, 'type' => Alert::TYPE_COMMENT, 'payload' => [
+            'section_id' => $math->id, 'course_name' => 'Math 7', 'assignment_name' => 'Quiz 3', 'comment' => 'Show your work on the word problems.',
         ]]);
         Alert::create(['student_id' => $avery->id, 'sync_run_id' => $run->id, 'type' => Alert::TYPE_SCORE_POSTED, 'read_at' => now(), 'payload' => [
             'section_id' => $math->id, 'course_name' => 'Science 7', 'assignment_name' => 'Cells unit test', 'score' => '44', 'points_possible' => 50, 'percent' => 88,

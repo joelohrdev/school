@@ -39,7 +39,9 @@ class DailyDigest extends Mailable
             $t['newly_late'] ? $t['newly_late'].' late' : null,
             $t['grade_drops'] ? $t['grade_drops'].' grade '.($t['grade_drops'] === 1 ? 'drop' : 'drops') : null,
             $t['scores'] ? $t['scores'].' new '.($t['scores'] === 1 ? 'score' : 'scores') : null,
+            ($t['absences'] ?? 0) ? $t['absences'].' '.($t['absences'] === 1 ? 'absence or tardy' : 'absences or tardies') : null,
             $t['resolved'] ? $t['resolved'].' turned in' : null,
+            ($t['comments'] ?? 0) ? $t['comments'].' teacher '.($t['comments'] === 1 ? 'comment' : 'comments') : null,
         ]);
 
         return 'School update: '.($parts === [] ? 'changes since yesterday' : implode(', ', $parts));

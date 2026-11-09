@@ -105,3 +105,30 @@ it('sends the digest from the command only with --digest', function () {
 
     $this->artisan('powerschool:sync --digest')->expectsOutputToContain('No changes; no digest sent.')->assertSuccessful();
 });
+
+it('lists new absences and teacher comments', function () {
+    fakePowerSchoolSync();
+    app(SyncService::class)->run();
+
+    $data = powerschoolFixtureData('student_data');
+    $kid = &$data['getStudentDataResponse']['return']['studentDataVOs'][0];
+    $kid['attendance'][] = ['id' => 6004, 'attDate' => '2026-11-09T00:00:00.000Z', 'attCodeid' => 22, 'periodid' => 1];
+    $kid['assignmentScores'][1]['comment'] = 'Redo question 4 for full credit';
+    unset($kid);
+
+    $this->travel(1)->hours();
+    fakePowerSchoolSync($data);
+    app(SyncService::class)->run();
+
+    expect(app(DigestSender::class)->send())->toBe(DigestSender::SENT);
+
+    Mail::assertSent(DailyDigest::class, function (DailyDigest $mail) {
+        $html = $mail->render();
+
+        return $mail->subjectLine() === 'School update: 1 absence or tardy, 1 teacher comment'
+            && str_contains($html, 'Attendance')
+            && str_contains($html, 'Tardy')
+            && str_contains($html, 'Teacher comments')
+            && str_contains($html, 'Redo question 4 for full credit');
+    });
+});

@@ -22,6 +22,27 @@ export type MissingItem = {
     daysOverdue: number | null;
 };
 
+export type UpcomingItem = {
+    id: number;
+    name: string;
+    course: string;
+    sectionId: number;
+    dueOn: string | null;
+    daysUntil: number | null;
+};
+
+export type ReportCardRow = {
+    id: number;
+    term: string | null;
+    title: string | null;
+    startsOn: string | null;
+    endsOn: string | null;
+    percent: number | null;
+    letter: string | null;
+    comment: string | null;
+    current: boolean;
+};
+
 export type StudentRef = {
     id: number;
     name: string;
@@ -33,6 +54,7 @@ export type StudentSummary = StudentRef & {
     missingCount: number;
     lateCount: number;
     missing: MissingItem[];
+    upcoming: UpcomingItem[];
     classes: ClassRow[];
 };
 
@@ -84,7 +106,9 @@ export type AlertType =
     | 'late'
     | 'missing_resolved'
     | 'score_posted'
-    | 'grade_drop';
+    | 'grade_drop'
+    | 'absence'
+    | 'comment';
 
 export type AlertRow = {
     id: number;
@@ -102,6 +126,10 @@ export type AlertRow = {
         previous_percent?: number;
         previous_on?: string;
         drop?: number;
+        comment?: string | null;
+        date?: string;
+        code?: string | null;
+        description?: string | null;
     };
     createdAt: string;
     readAt: string | null;

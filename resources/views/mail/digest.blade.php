@@ -39,6 +39,22 @@
 @endforeach
 
 @endif
+@if ($s['absences'])
+**Attendance**
+
+@foreach ($s['absences'] as $a)
+- {{ $fmt($a['date']) }}: {{ $a['description'] ?? $a['code'] }}
+@endforeach
+
+@endif
+@if ($s['comments'])
+**Teacher comments**
+
+@foreach ($s['comments'] as $a)
+- {{ $a['assignment_name'] }} ({{ $a['course_name'] }}): “{{ $a['comment'] }}”
+@endforeach
+
+@endif
 @if ($s['scores'])
 **New scores**
 
@@ -46,7 +62,7 @@
 @php
     $line = e($a['assignment_name']).' ('.e($a['course_name']).'): '.e($a['score'] ?? '—');
     if ($a['points_possible']) { $line .= '/'.rtrim(rtrim(number_format($a['points_possible'], 2), '0'), '.'); }
-    if ($a['percent'] !== null) { $line .= ' · '.$pct($a['percent']); }
+    if ($a['percent'] !== null) { $line .= ', '.$pct($a['percent']); }
 @endphp
 - {!! $line !!}
 @endforeach

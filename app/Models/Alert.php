@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Both alerts (missing, late, grade drop) and informational events
- * (missing resolved, score posted) live here, told apart by type.
+ * Both alerts (missing, late, grade drop, absence) and informational events
+ * (missing resolved, score posted, teacher comment) live here, told apart by type.
  *
  * @property int $id
  * @property int $student_id
@@ -34,6 +34,10 @@ class Alert extends Model
     public const TYPE_SCORE_POSTED = 'score_posted';
 
     public const TYPE_GRADE_DROP = 'grade_drop';
+
+    public const TYPE_ABSENCE = 'absence';
+
+    public const TYPE_COMMENT = 'comment';
 
     protected function casts(): array
     {

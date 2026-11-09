@@ -168,3 +168,39 @@ it('counts would-be alerts on a dry run without saving them', function () {
     expect($result->counts['alerts']['created'])->toBe(1)
         ->and(Alert::count())->toBe(0);
 });
+
+it('alerts when a teacher adds or changes a comment', function () {
+    expect(syncThen(withScore(0, ['comment' => 'Please bring this in tomorrow'])))->toBe(['comment']);
+    expect(Alert::where('type', Alert::TYPE_COMMENT)->sole()->payload)
+        ->comment->toBe('Please bring this in tomorrow')
+        ->assignment_name->toBe('Fractions worksheet');
+});
+
+it('stays quiet when a comment is removed or only differs in whitespace', function () {
+    expect(syncThen(withScore(1, ['comment' => null])))->toBe([]);
+    expect(syncThen(withScore(1, ['comment' => '  Nice work  '])))->toBe([]);
+});
+
+it('alerts for a newly recorded absence or tardy but not for plain presence', function () {
+    $types = syncThen(averyWith(function (array $kid) {
+        $kid['attendance'][] = ['id' => 6004, 'attDate' => '2026-11-09T00:00:00.000Z', 'attCodeid' => 21, 'periodid' => 1];
+        $kid['attendance'][] = ['id' => 6005, 'attDate' => '2026-11-09T00:00:00.000Z', 'attCodeid' => 23, 'periodid' => 2];
+
+        return $kid;
+    }));
+
+    expect($types)->toBe(['absence']);
+    expect(Alert::where('type', Alert::TYPE_ABSENCE)->sole()->payload)->toBe([
+        'date' => '2026-11-09',
+        'code' => 'AE',
+        'description' => 'Absent Excused',
+    ]);
+});
+
+it('alerts when a present mark is changed to an absence', function () {
+    expect(syncThen(averyWith(function (array $kid) {
+        $kid['attendance'][2]['attCodeid'] = 22;
+
+        return $kid;
+    })))->toBe(['absence']);
+});

@@ -16,6 +16,7 @@ import {
     gradeOrdinal,
     plural,
 } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { show as showSection } from '@/routes/sections';
 import { show as showStudent } from '@/routes/students';
 import type { StudentSummary, SyncRunRow } from '@/types/gradebook';
@@ -27,6 +28,8 @@ type Props = {
 };
 
 const MISSING_PREVIEW = 5;
+
+const UPCOMING_PREVIEW = 5;
 
 export default function Dashboard({ students, lastSync, today }: Props) {
     return (
@@ -163,6 +166,71 @@ function StudentSheet({ student }: { student: StudentSummary }) {
                 </section>
             )}
 
+            {student.upcoming.length > 0 && (
+                <section aria-labelledby={`upcoming-${student.id}`}>
+                    <LineHeading
+                        id={`upcoming-${student.id}`}
+                        margin={<span className="sr-only">Due</span>}
+                    >
+                        Due this week
+                    </LineHeading>
+                    <ul>
+                        {student.upcoming
+                            .slice(0, UPCOMING_PREVIEW)
+                            .map((u) => (
+                                <Line
+                                    key={u.id}
+                                    as="li"
+                                    margin={u.dueOn && formatShortDay(u.dueOn)}
+                                    className="py-2"
+                                >
+                                    <div className="flex items-baseline justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <div className="truncate font-semibold">
+                                                {u.name}
+                                            </div>
+                                            <Link
+                                                href={showSection(u.sectionId)}
+                                                className="truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
+                                            >
+                                                {u.course}
+                                            </Link>
+                                        </div>
+                                        {u.daysUntil !== null && (
+                                            <span
+                                                className={cn(
+                                                    'shrink-0 text-xs',
+                                                    u.daysUntil <= 1
+                                                        ? 'font-semibold text-foreground'
+                                                        : 'text-muted-foreground',
+                                                )}
+                                            >
+                                                {dueIn(u.daysUntil)}
+                                            </span>
+                                        )}
+                                    </div>
+                                </Line>
+                            ))}
+                        {student.upcoming.length > UPCOMING_PREVIEW && (
+                            <Line as="li" className="py-2">
+                                <Link
+                                    href={showStudent(student.id, {
+                                        query: {
+                                            tab: 'assignments',
+                                            filter: 'upcoming',
+                                        },
+                                    })}
+                                    className="text-sm font-semibold hover:underline"
+                                >
+                                    See all {student.upcoming.length} due this
+                                    week
+                                </Link>
+                            </Line>
+                        )}
+                    </ul>
+                </section>
+            )}
+
             <section aria-labelledby={`classes-${student.id}`}>
                 <LineHeading
                     id={`classes-${student.id}`}
@@ -174,4 +242,12 @@ function StudentSheet({ student }: { student: StudentSummary }) {
             </section>
         </Sheet>
     );
+}
+
+function dueIn(days: number): string {
+    if (days <= 0) {
+        return 'Due today';
+    }
+
+    return days === 1 ? 'Due tomorrow' : `In ${days} days`;
 }

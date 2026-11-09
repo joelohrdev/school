@@ -4,6 +4,7 @@ namespace App\Services\PowerSchool;
 
 use App\Models\Alert;
 use App\Models\AssignmentScore;
+use App\Models\AttendanceRecord;
 use App\Models\FinalGrade;
 use App\Models\GradeSnapshot;
 use App\Models\Section;
@@ -30,7 +31,7 @@ class ChangeDetector
     /**
      * Snapshot the fields detection cares about, before the row is updated.
      *
-     * @return array{missing: bool, late: bool, scored: bool}|null null for a new row
+     * @return array{missing: bool, late: bool, scored: bool, comment: string|null}|null null for a new row
      */
     public function scoreState(AssignmentScore $score): ?array
     {
@@ -42,11 +43,12 @@ class ChangeDetector
             'missing' => (bool) $score->getOriginal('missing') && ! $score->getOriginal('exempt'),
             'late' => (bool) $score->getOriginal('late') && ! $score->getOriginal('exempt'),
             'scored' => self::isScored($score->getOriginal('score'), $score->getOriginal('percent'), $score->getOriginal('letter_grade')),
+            'comment' => self::text($score->getOriginal('comment')),
         ];
     }
 
     /**
-     * @param  array{missing: bool, late: bool, scored: bool}|null  $before
+     * @param  array{missing: bool, late: bool, scored: bool, comment: string|null}|null  $before
      * @return list<Alert>
      */
     public function scoreChanged(Student $student, AssignmentScore $score, ?array $before, SyncRun $run, bool $baseline): array
@@ -55,16 +57,18 @@ class ChangeDetector
             return [];
         }
 
-        $before ??= ['missing' => false, 'late' => false, 'scored' => false];
+        $before ??= ['missing' => false, 'late' => false, 'scored' => false, 'comment' => null];
         $missing = $score->missing && ! $score->exempt;
         $late = $score->late && ! $score->exempt;
         $scored = self::isScored($score->score, $score->percent, $score->letter_grade);
+        $comment = self::text($score->comment);
 
         $types = array_keys(array_filter([
             Alert::TYPE_MISSING => $missing && ! $before['missing'],
             Alert::TYPE_MISSING_RESOLVED => ! $missing && $before['missing'],
             Alert::TYPE_LATE => $late && ! $before['late'],
             Alert::TYPE_SCORE_POSTED => $scored && ! $before['scored'],
+            Alert::TYPE_COMMENT => $comment !== null && $comment !== $before['comment'],
         ]));
 
         if ($types === []) {
@@ -84,6 +88,7 @@ class ChangeDetector
             'percent' => $score->percent === null ? null : (float) $score->percent,
             'letter_grade' => $score->letter_grade,
             'points_possible' => $assignment->points_possible === null ? null : (float) $assignment->points_possible,
+            'comment' => $comment,
         ];
 
         return array_map(fn (string $type) => Alert::create([
@@ -125,6 +130,40 @@ class ChangeDetector
                 'drop' => $drop,
             ],
         ]);
+    }
+
+    /**
+     * Raise an absence alert for a newly recorded absence or tardy. Plain
+     * presence (a blank code) is not news.
+     */
+    public function attendanceChanged(Student $student, AttendanceRecord $record, SyncRun $run, bool $baseline): ?Alert
+    {
+        $marked = self::text($record->code) !== null;
+        // After save, getOriginal() already holds the new code; getPrevious() has the old one.
+        $isNew = $record->wasRecentlyCreated
+            || ($record->wasChanged('code') && self::text($record->getPrevious()['code'] ?? null) === null);
+
+        if ($baseline || ! $marked || ! $isNew) {
+            return null;
+        }
+
+        return Alert::create([
+            'student_id' => $student->id,
+            'sync_run_id' => $run->id,
+            'type' => Alert::TYPE_ABSENCE,
+            'payload' => [
+                'date' => $record->date->toDateString(),
+                'code' => $record->code,
+                'description' => $record->description,
+            ],
+        ]);
+    }
+
+    private static function text(mixed $value): ?string
+    {
+        $value = is_string($value) ? trim($value) : null;
+
+        return $value === '' ? null : $value;
     }
 
     private static function isScored(mixed $score, mixed $percent, mixed $letter): bool

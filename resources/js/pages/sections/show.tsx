@@ -12,10 +12,12 @@ import {
     SheetTitle,
 } from '@/components/notebook';
 import { Segmented } from '@/components/segmented';
+import { formatShortDay } from '@/lib/format';
 import { show as showStudent } from '@/routes/students';
 import type {
     AssignmentRow,
     ClassRow,
+    ReportCardRow,
     StudentRef,
     TrendPoint,
 } from '@/types/gradebook';
@@ -23,6 +25,7 @@ import type {
 type Props = {
     student: StudentRef;
     section: ClassRow & { history: TrendPoint[] };
+    reportCard: ReportCardRow[];
     assignments: AssignmentRow[];
     today: string;
 };
@@ -30,6 +33,7 @@ type Props = {
 export default function SectionShow({
     student,
     section,
+    reportCard,
     assignments,
     today,
 }: Props) {
@@ -121,6 +125,67 @@ export default function SectionShow({
                             <GradeHistoryChart points={section.history} />
                         </Line>
                     </section>
+
+                    {reportCard.length > 0 && (
+                        <section aria-labelledby="report-card">
+                            <LineHeading
+                                id="report-card"
+                                margin={<span className="sr-only">Term</span>}
+                            >
+                                Report card
+                            </LineHeading>
+                            <ul>
+                                {reportCard.map((r) => (
+                                    <Line
+                                        key={r.id}
+                                        as="li"
+                                        className="py-2"
+                                        margin={
+                                            <span className="text-sm font-semibold text-foreground">
+                                                {r.term}
+                                            </span>
+                                        }
+                                    >
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <div className="font-semibold">
+                                                    {r.title ??
+                                                        r.term ??
+                                                        'Term'}
+                                                    {r.current && (
+                                                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                                            Current
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {r.startsOn && r.endsOn && (
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {formatShortDay(
+                                                            r.startsOn,
+                                                        )}{' '}
+                                                        to{' '}
+                                                        {formatShortDay(
+                                                            r.endsOn,
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {r.comment && (
+                                                    <p className="mt-1 border-l-2 border-rule pl-2 text-sm text-muted-foreground italic">
+                                                        {r.comment}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <GradeValue
+                                                percent={r.percent}
+                                                letter={r.letter}
+                                                className="w-28 shrink-0 justify-end"
+                                            />
+                                        </div>
+                                    </Line>
+                                ))}
+                            </ul>
+                        </section>
+                    )}
 
                     <section aria-labelledby="class-assignments">
                         <LineHeading

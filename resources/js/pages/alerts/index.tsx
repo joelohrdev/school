@@ -1,8 +1,10 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import {
     AlarmClock,
+    CalendarX2,
     CircleAlert,
     CircleCheck,
+    MessageSquareText,
     Sparkles,
     TrendingDown,
 } from 'lucide-react';
@@ -44,6 +46,16 @@ const meta: Record<
         label: 'New score',
         icon: Sparkles,
         tone: 'text-grade-line',
+    },
+    absence: {
+        label: 'Attendance',
+        icon: CalendarX2,
+        tone: 'text-late',
+    },
+    comment: {
+        label: 'Teacher comment',
+        icon: MessageSquareText,
+        tone: 'text-foreground',
     },
 };
 
@@ -174,6 +186,27 @@ function AlertItem({ alert }: { alert: AlertRow }) {
                 {formatPercent(p.previous_percent)} to{' '}
                 <span className="font-medium">{formatPercent(p.percent)}</span>
                 {p.letter_grade && ` (${p.letter_grade})`}
+            </>
+        );
+    } else if (alert.type === 'absence') {
+        body = (
+            <>
+                <span className="font-medium">
+                    {p.description ?? p.code ?? 'Marked'}
+                </span>
+                {p.date && (
+                    <span className="text-muted-foreground">
+                        {' '}
+                        on {formatDay(p.date)}
+                    </span>
+                )}
+            </>
+        );
+    } else if (alert.type === 'comment') {
+        body = (
+            <>
+                <span className="font-medium">{p.assignment_name}</span>:{' '}
+                <span className="italic">{p.comment}</span>
             </>
         );
     } else if (alert.type === 'score_posted') {

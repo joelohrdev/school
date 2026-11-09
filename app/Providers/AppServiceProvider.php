@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\PowerSchool\ChangeDetector;
 use App\Services\PowerSchool\PowerSchoolClient;
+use App\Services\SyncHealth\FailureNotifier;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(PowerSchoolClient::class, fn (): PowerSchoolClient => PowerSchoolClient::fromConfig());
         $this->app->bind(ChangeDetector::class, fn (): ChangeDetector => ChangeDetector::fromConfig());
-        //
+        $this->app->bind(FailureNotifier::class, fn (): FailureNotifier => FailureNotifier::fromConfig());
     }
 
     /**

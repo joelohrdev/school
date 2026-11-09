@@ -18,6 +18,7 @@ use App\Models\Teacher;
 use App\Models\Term;
 use App\Services\PowerSchool\Exceptions\AuthFailed;
 use App\Services\PowerSchool\Exceptions\PowerSchoolException;
+use App\Services\SyncHealth\FailureNotifier;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -40,6 +41,7 @@ class SyncService
         private readonly PowerSchoolClient $client,
         private readonly CurrentGradeResolver $grades,
         private readonly ChangeDetector $changes,
+        private readonly FailureNotifier $failures,
     ) {}
 
     public function run(bool $dryRun = false, string $trigger = SyncRun::TRIGGER_CLI): SyncResult
@@ -127,6 +129,15 @@ class SyncService
             'counts' => $counts->toArray(),
             'error' => $errors === [] ? null : implode("\n", $errors),
         ]);
+
+        if (! $dryRun) {
+            try {
+                $this->failures->check($run);
+            } catch (Throwable $e) {
+                // A mail outage must not turn a finished sync into a crash.
+                report($e);
+            }
+        }
 
         return new SyncResult($status, $dryRun, $counts->toArray(), $errors, $dryRun ? null : $run);
     }
@@ -288,7 +299,7 @@ class SyncService
         }
 
         $this->syncDaysOff($vo['notInSessionDays'] ?? [], $counts);
-        $this->syncAttendance($student, $vo['attendance'] ?? [], $vo['attendanceCodes'] ?? [], $counts);
+        $this->syncAttendance($student, $vo['attendance'] ?? [], $vo['attendanceCodes'] ?? [], $run, $counts, $baseline);
 
         $this->snapshot($student, $run, $counts, $now, $baseline);
 
@@ -329,7 +340,7 @@ class SyncService
      * @param  list<mixed>  $rows
      * @param  list<mixed>  $codeRows
      */
-    private function syncAttendance(Student $student, array $rows, array $codeRows, SyncCounts $counts): void
+    private function syncAttendance(Student $student, array $rows, array $codeRows, SyncRun $run, SyncCounts $counts, bool $baseline): void
     {
         $codes = [];
 
@@ -361,6 +372,10 @@ class SyncService
                 'ps_period_id' => Value::int(self::first($row, ['periodid', 'periodId'])),
             ]);
             $counts->record('attendance_records', $record);
+
+            if ($alert = $this->changes->attendanceChanged($student, $record, $run, $baseline)) {
+                $counts->record('alerts', $alert);
+            }
         }
     }
 

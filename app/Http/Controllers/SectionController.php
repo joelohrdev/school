@@ -25,6 +25,7 @@ class SectionController extends Controller
                     ->map(fn (GradeSnapshot $s) => ['date' => $s->snapshot_on->toDateString(), 'percent' => $s->percent === null ? null : (float) $s->percent])
                     ->values(),
             ],
+            'reportCard' => $gradebook->reportCard($section),
             'assignments' => $gradebook->assignments($section->student, $section),
             'today' => $gradebook->today()->toDateString(),
         ]);

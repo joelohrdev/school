@@ -42,6 +42,8 @@ class DigestBuilder
                 'resolved' => $of(Alert::TYPE_MISSING_RESOLVED),
                 'scores' => $of(Alert::TYPE_SCORE_POSTED),
                 'grade_drops' => $of(Alert::TYPE_GRADE_DROP),
+                'absences' => $of(Alert::TYPE_ABSENCE),
+                'comments' => $of(Alert::TYPE_COMMENT),
                 'still_missing_count' => $missing->count(),
                 'oldest_missing' => $oldest === null ? null : [
                     'course_name' => $oldest->assignment->section->course_name,
@@ -64,6 +66,8 @@ class DigestBuilder
                 'grade_drops' => $all->where('type', Alert::TYPE_GRADE_DROP)->count(),
                 'scores' => $all->where('type', Alert::TYPE_SCORE_POSTED)->count(),
                 'resolved' => $all->where('type', Alert::TYPE_MISSING_RESOLVED)->count(),
+                'absences' => $all->where('type', Alert::TYPE_ABSENCE)->count(),
+                'comments' => $all->where('type', Alert::TYPE_COMMENT)->count(),
             ],
         ];
     }

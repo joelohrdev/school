@@ -24,14 +24,19 @@ Laravel 13, Inertia, React, TypeScript and Tailwind (React starter kit with Fort
     - work newly marked missing or late
     - missing work turned in or excused
     - newly posted scores
+    - new teacher comments on assignments
+    - a newly recorded absence or tardy
     - a class grade falling by at least `POWERSCHOOL_GRADE_DROP_THRESHOLD` points since
       the last snapshot
 
     A kid's first sync is a baseline, so it raises nothing.
 
 - The 06:30 run emails a digest to `MAIL_TO_PARENT` covering every alert not yet
-  emailed: newly missing work, still missing (count and oldest), grade drops and new
-  scores. No change, no email.
+  emailed: newly missing work, still missing (count and oldest), grade drops, attendance,
+  teacher comments and new scores. No change, no email.
+- If syncing fails twice in a row (`POWERSCHOOL_FAILURE_ALERT_AFTER`), `MAIL_TO_PARENT`
+  gets one email saying so, with the error. Without it, a broken sync just looks like a
+  quiet day. It emails again only after a sync has succeeded in between.
 - Each run is recorded in `sync_runs`. The raw PowerSchool payload is kept encrypted
   for 14 days for debugging, then pruned.
 
@@ -58,7 +63,10 @@ Then edit `.env`:
 | `POWERSCHOOL_USERNAME` / `POWERSCHOOL_PASSWORD` | the parent portal login                                                              |
 | `POWERSCHOOL_TIMEZONE`                          | `America/Chicago`                                                                    |
 | `POWERSCHOOL_GRADE_DROP_THRESHOLD`              | points a class grade must fall to alert (default 3)                                  |
-| `MAIL_TO_PARENT`                                | where the digest goes; leave blank to disable it                                     |
+| `MAIL_TO_PARENT`                                | where the digest and sync-failure emails go; leave blank to disable both             |
+| `POWERSCHOOL_FAILURE_ALERT_AFTER`               | failed syncs in a row before the failure email (default 2)                           |
+| `BACKUP_DISKS`                                  | comma-separated disks for nightly backups (default `local`), see below               |
+| `BACKUP_KEEP`                                   | backups kept on each disk (default 14)                                               |
 | `MAIL_MAILER` etc.                              | a real mailer in production; `log` locally writes mail to `storage/logs/laravel.log` |
 
 The mobile-app digest credentials (`pearson` / `m0bApP5`) are public, static values
@@ -91,6 +99,7 @@ Vite.
 
 - `powerschool:sync --digest` at 06:30 on weekdays, Chicago time
 - `powerschool:sync` at 15:45 on weekdays
+- `backup:database` daily at 02:30, see [Backups](#backups)
 - `model:prune` daily at 03:00, which removes raw payloads older than 14 days
 
 Both syncs use `withoutOverlapping()`, and the service holds its own lock, so a manual
@@ -110,6 +119,36 @@ scheduler toggle that adds the cron:
 ```
 * * * * * cd /home/forge/school && php artisan schedule:run >> /dev/null 2>&1
 ```
+
+## Backups
+
+PowerSchool only shows the current state, so this database is the only copy of the
+grade history and the trend charts. `backup:database` runs nightly and writes a
+consistent copy of the SQLite file, gzipped and encrypted with `APP_KEY`, to each disk in
+`BACKUP_DISKS`, keeping the newest `BACKUP_KEEP`.
+
+The default `local` disk (`storage/app/private/backups`) sits on the same server, so it
+won't survive losing the server. Add an off-server disk: configure `s3` in `.env`
+(`AWS_*`; any S3-compatible storage works) and set `BACKUP_DISKS=local,s3`.
+
+**Keep a copy of `APP_KEY` somewhere safe, like a password manager.** Backups can't be
+opened without it. To restore one:
+
+```bash
+php artisan backup:decrypt storage/app/private/backups/kids-tracker-2026-11-09-083000.sqlite.gz.enc /tmp/restored.sqlite
+```
+
+Then stop the app and copy the file over `database/database.sqlite`.
+
+`backup:database` only handles SQLite. With MySQL or Postgres, use your host's
+database backups.
+
+## Phone home screen
+
+The app has a web app manifest and icon, so it can be added to a phone's home screen
+and opens full-screen. On iPhone: Share, then Add to Home Screen. On Android: the
+browser menu, then Install app. There is no offline mode; nothing about the kids is
+cached on the phone.
 
 ## Previewing with fake data
 
@@ -137,7 +176,8 @@ Pest tests cover:
 - auth and transport failures
 - idempotent sync
 - every change-detection rule
-- the digest
+- the digest and the sync-failure email
+- backups and restoring them
 - the pages
 - the registration lock
 
