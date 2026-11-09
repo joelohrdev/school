@@ -23,7 +23,7 @@ export function Segmented<T extends string>({
     if (variant === 'chips') {
         return (
             <div
-                className="-mx-4 flex [scrollbar-width:none] gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden"
+                className="-mx-3 flex [scrollbar-width:none] gap-2 overflow-x-auto px-3 sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden"
                 role="group"
                 aria-label={label}
             >
@@ -34,10 +34,10 @@ export function Segmented<T extends string>({
                         onClick={() => onChange(o.value)}
                         aria-pressed={value === o.value}
                         className={cn(
-                            'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors',
+                            'inline-flex shrink-0 items-center gap-1.5 rounded-sm border px-2.5 py-1 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                             value === o.value
-                                ? 'border-foreground bg-foreground text-background'
-                                : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                                ? 'border-foreground bg-foreground font-semibold text-background'
+                                : 'border-rule bg-card text-muted-foreground hover:border-input hover:text-foreground',
                         )}
                     >
                         {o.label}
@@ -53,7 +53,11 @@ export function Segmented<T extends string>({
     }
 
     return (
-        <div className="flex border-b" role="tablist" aria-label={label}>
+        <div
+            className="-mb-px flex [scrollbar-width:none] gap-5 overflow-x-auto [&::-webkit-scrollbar]:hidden"
+            role="tablist"
+            aria-label={label}
+        >
             {options.map((o) => (
                 <button
                     key={o.value}
@@ -62,15 +66,15 @@ export function Segmented<T extends string>({
                     aria-selected={value === o.value}
                     onClick={() => onChange(o.value)}
                     className={cn(
-                        '-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                        'inline-flex shrink-0 items-center gap-1.5 border-b-[3px] pt-3 pb-2 font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                         value === o.value
                             ? 'border-foreground text-foreground'
-                            : 'border-transparent text-muted-foreground hover:text-foreground',
+                            : 'border-transparent text-muted-foreground hover:border-rule hover:text-foreground',
                     )}
                 >
                     {o.label}
                     {o.count !== undefined && o.count > 0 && (
-                        <span className="rounded-full bg-muted px-1.5 text-xs tabular-nums">
+                        <span className="text-xs font-normal text-muted-foreground tabular-nums">
                             {o.count}
                         </span>
                     )}
@@ -80,23 +84,24 @@ export function Segmented<T extends string>({
     );
 }
 
-/** Read and write a query-string key without a server round trip. */
+/**
+ * Read a query-string key from the Inertia page URL. Use the page URL, not
+ * window.location, so the server render and the first client render agree.
+ */
 export function readQuery<T extends string>(
+    pageUrl: string,
     key: string,
     allowed: readonly T[],
     fallback: T,
 ): T {
-    if (typeof window === 'undefined') {
-        return fallback;
-    }
-
-    const v = new URLSearchParams(window.location.search).get(key);
+    const v = new URL(pageUrl, 'http://localhost').searchParams.get(key);
 
     return (allowed as readonly string[]).includes(v ?? '')
         ? (v as T)
         : fallback;
 }
 
+/** Update a query-string key without a server round trip. */
 export function writeQuery(key: string, value: string, fallback: string): void {
     const url = new URL(window.location.href);
 

@@ -1,10 +1,18 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { AssignmentList } from '@/components/grades/assignment-list';
 import { ClassList } from '@/components/grades/class-list';
 import { CountBadge, assignmentStatus } from '@/components/grades/status-badge';
+import {
+    Blank,
+    Line,
+    LineHeading,
+    Page,
+    Sheet,
+    SheetTitle,
+} from '@/components/notebook';
 import { Segmented, readQuery, writeQuery } from '@/components/segmented';
-import { daysBetween, formatDay } from '@/lib/format';
+import { daysBetween, formatShortDay, gradeOrdinal } from '@/lib/format';
 import type {
     AssignmentRow,
     Attendance,
@@ -35,11 +43,12 @@ export default function StudentShow({
     attendance,
     today,
 }: Props) {
+    const { url } = usePage();
     const [tab, setTab] = useState<Tab>(() =>
-        readQuery('tab', TABS, 'classes'),
+        readQuery(url, 'tab', TABS, 'classes'),
     );
     const [filter, setFilter] = useState<Filter>(() =>
-        readQuery('filter', FILTERS, 'all'),
+        readQuery(url, 'filter', FILTERS, 'all'),
     );
 
     const groups = useMemo(() => {
@@ -86,7 +95,7 @@ export default function StudentShow({
 
     const empties: Record<Filter, string> = {
         all: 'No assignments yet.',
-        missing: 'Nothing missing. 🎉',
+        missing: 'Nothing missing.',
         late: 'Nothing marked late.',
         upcoming: 'Nothing due in the next 7 days.',
         recent: `No scores posted in the last ${RECENT_DAYS} days.`,
@@ -95,149 +104,166 @@ export default function StudentShow({
     return (
         <>
             <Head title={student.name} />
-            <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 p-4">
-                <div className="flex flex-wrap items-end justify-between gap-2">
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight">
-                            {student.fullName}
-                        </h1>
-                        {student.gradeLevel !== null && (
-                            <p className="text-sm text-muted-foreground">
-                                Grade {student.gradeLevel}
-                            </p>
-                        )}
-                    </div>
-                    <div className="flex gap-1.5">
-                        <CountBadge
-                            status="missing"
-                            count={groups.missing.length}
-                        />
-                        <CountBadge status="late" count={groups.late.length} />
-                    </div>
-                </div>
+            <Page>
+                <Sheet>
+                    <SheetTitle
+                        margin={
+                            student.gradeLevel !== null && (
+                                <span title={`Grade ${student.gradeLevel}`}>
+                                    {gradeOrdinal(student.gradeLevel)}
+                                </span>
+                            )
+                        }
+                        title={student.fullName}
+                        aside={
+                            <>
+                                <CountBadge
+                                    status="missing"
+                                    count={groups.missing.length}
+                                />
+                                <CountBadge
+                                    status="late"
+                                    count={groups.late.length}
+                                />
+                            </>
+                        }
+                    />
 
-                <Segmented
-                    label="Sections"
-                    value={tab}
-                    onChange={changeTab}
-                    options={[
-                        {
-                            value: 'classes',
-                            label: 'Classes',
-                            count: classes.length,
-                        },
-                        {
-                            value: 'assignments',
-                            label: 'Assignments',
-                            count: groups.missing.length,
-                        },
-                        { value: 'attendance', label: 'Attendance' },
-                    ]}
-                />
-
-                {tab === 'classes' && <ClassList classes={classes} detailed />}
-
-                {tab === 'assignments' && (
-                    <div className="space-y-3">
+                    <Line>
                         <Segmented
-                            variant="chips"
-                            label="Filter assignments"
-                            value={filter}
-                            onChange={changeFilter}
+                            label="Sections"
+                            value={tab}
+                            onChange={changeTab}
                             options={[
                                 {
-                                    value: 'all',
-                                    label: 'All',
-                                    count: groups.all.length,
+                                    value: 'classes',
+                                    label: 'Classes',
+                                    count: classes.length,
                                 },
                                 {
-                                    value: 'missing',
-                                    label: 'Missing',
-                                    count: groups.missing.length,
+                                    value: 'assignments',
+                                    label: 'Assignments',
+                                    count: assignments.length,
                                 },
-                                {
-                                    value: 'late',
-                                    label: 'Late',
-                                    count: groups.late.length,
-                                },
-                                {
-                                    value: 'upcoming',
-                                    label: 'Due in 7 days',
-                                    count: groups.upcoming.length,
-                                },
-                                {
-                                    value: 'recent',
-                                    label: 'Recent scores',
-                                    count: groups.recent.length,
-                                },
+                                { value: 'attendance', label: 'Attendance' },
                             ]}
                         />
-                        <AssignmentList
-                            assignments={groups[filter]}
-                            today={today}
-                            empty={empties[filter]}
-                        />
-                    </div>
-                )}
+                    </Line>
 
-                {tab === 'attendance' && (
-                    <AttendanceSummary attendance={attendance} />
-                )}
-            </div>
+                    {tab === 'classes' && (
+                        <ClassList classes={classes} detailed />
+                    )}
+
+                    {tab === 'assignments' && (
+                        <>
+                            <Line className="bg-muted/50 py-2.5">
+                                <Segmented
+                                    variant="chips"
+                                    label="Filter assignments"
+                                    value={filter}
+                                    onChange={changeFilter}
+                                    options={[
+                                        {
+                                            value: 'all',
+                                            label: 'All',
+                                            count: groups.all.length,
+                                        },
+                                        {
+                                            value: 'missing',
+                                            label: 'Missing',
+                                            count: groups.missing.length,
+                                        },
+                                        {
+                                            value: 'late',
+                                            label: 'Late',
+                                            count: groups.late.length,
+                                        },
+                                        {
+                                            value: 'upcoming',
+                                            label: 'Due in 7 days',
+                                            count: groups.upcoming.length,
+                                        },
+                                        {
+                                            value: 'recent',
+                                            label: 'Recent scores',
+                                            count: groups.recent.length,
+                                        },
+                                    ]}
+                                />
+                            </Line>
+                            <AssignmentList
+                                assignments={groups[filter]}
+                                today={today}
+                                empty={empties[filter]}
+                            />
+                        </>
+                    )}
+
+                    {tab === 'attendance' && (
+                        <AttendanceSummary attendance={attendance} />
+                    )}
+                </Sheet>
+            </Page>
         </>
     );
 }
 
 function AttendanceSummary({ attendance }: { attendance: Attendance }) {
     if (attendance.total === 0) {
-        return (
-            <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                No absences or tardies recorded.
-            </p>
-        );
+        return <Blank>No absences or tardies recorded.</Blank>;
     }
 
     return (
-        <div className="grid gap-4 sm:grid-cols-2">
-            <section className="rounded-lg border p-4">
-                <h2 className="mb-2 text-sm font-medium">By type</h2>
-                <ul className="space-y-1.5">
+        <>
+            <section aria-labelledby="att-by-type">
+                <LineHeading
+                    id="att-by-type"
+                    margin={<span className="sr-only">Count</span>}
+                >
+                    By type
+                </LineHeading>
+                <ul>
                     {attendance.byCode.map((c) => (
-                        <li
+                        <Line
                             key={`${c.code}-${c.description}`}
-                            className="flex items-center justify-between gap-3 text-sm"
+                            as="li"
+                            className="py-2"
+                            margin={
+                                <span className="text-sm font-semibold text-foreground">
+                                    {c.count}
+                                </span>
+                            }
                         >
-                            <span>
-                                {c.description ?? c.code}
-                                {c.code && c.description && (
-                                    <span className="ml-1.5 text-xs text-muted-foreground">
-                                        {c.code}
-                                    </span>
-                                )}
-                            </span>
-                            <span className="font-semibold tabular-nums">
-                                {c.count}
-                            </span>
-                        </li>
+                            {c.description ?? c.code}
+                            {c.code && c.description && (
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                    {c.code}
+                                </span>
+                            )}
+                        </Line>
                     ))}
                 </ul>
             </section>
-            <section className="rounded-lg border p-4">
-                <h2 className="mb-2 text-sm font-medium">Most recent</h2>
-                <ul className="space-y-1.5">
+            <section aria-labelledby="att-recent">
+                <LineHeading
+                    id="att-recent"
+                    margin={<span className="sr-only">Date</span>}
+                >
+                    Most recent
+                </LineHeading>
+                <ul>
                     {attendance.recent.map((r, i) => (
-                        <li
+                        <Line
                             key={`${r.date}-${i}`}
-                            className="flex items-center justify-between gap-3 text-sm"
+                            as="li"
+                            className="py-2"
+                            margin={formatShortDay(r.date)}
                         >
-                            <span>{formatDay(r.date)}</span>
-                            <span className="text-muted-foreground">
-                                {r.description ?? r.code}
-                            </span>
-                        </li>
+                            {r.description ?? r.code}
+                        </Line>
                     ))}
                 </ul>
             </section>
-        </div>
+        </>
     );
 }

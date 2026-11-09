@@ -42,7 +42,7 @@ export function GradeHistoryChart({ points }: { points: TrendPoint[] }) {
 
     if (data.length < 2) {
         return (
-            <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
                 The history chart fills in as daily syncs build up snapshots.
             </p>
         );
@@ -223,7 +223,7 @@ export function GradeHistoryChart({ points }: { points: TrendPoint[] }) {
                 {showTable ? 'Hide table' : 'Show as table'}
             </Button>
             {showTable && (
-                <div className="max-h-64 overflow-auto rounded-md border">
+                <div className="max-h-64 overflow-auto rounded-sm border border-rule">
                     <table className="w-full text-sm">
                         <thead className="sticky top-0 bg-muted text-left text-xs text-muted-foreground">
                             <tr>

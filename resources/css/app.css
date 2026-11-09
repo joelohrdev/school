@@ -9,7 +9,7 @@
 
 @theme {
     --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'Atkinson Hyperlegible Next', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 
@@ -58,6 +58,14 @@
     --color-chart-4: var(--chart-4);
     --color-chart-5: var(--chart-5);
 
+    --color-paper: var(--background);
+    --color-sheet: var(--card);
+    --color-rule: var(--border);
+    --color-margin: var(--margin);
+    --color-binder: var(--binder);
+    --color-binder-ink: var(--binder-ink);
+    --color-highlight: var(--highlight);
+
     --color-sidebar: var(--sidebar);
     --color-sidebar-foreground: var(--sidebar-foreground);
     --color-sidebar-primary: var(--sidebar-primary);
@@ -69,90 +77,92 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.87 0 0);
+    /* Notebook paper. Ink is ballpoint navy, corrections are red pen, late work is highlighted. */
+    --background: #f3f6ef;
+    --foreground: #1f2a44;
+    --card: #fbfcf9;
+    --card-foreground: #1f2a44;
+    --popover: #fbfcf9;
+    --popover-foreground: #1f2a44;
+    --primary: #1f2a44;
+    --primary-foreground: #f3f6ef;
+    --secondary: #e6ece2;
+    --secondary-foreground: #1f2a44;
+    --muted: #e6ece2;
+    --muted-foreground: #565f59;
+    --accent: #e6ece2;
+    --accent-foreground: #1f2a44;
+    --destructive: #b42318;
+    --destructive-foreground: #b42318;
+    --border: #d3e0d6;
+    --input: #c3d2c7;
+    --ring: #2b4fa8;
+    --margin: #e4a3a3;
+    --binder: #22305a;
+    --binder-ink: #dfe5f3;
+    --highlight: #fbe57a;
     /* Single-series grade line; validated against both surfaces with the dataviz validator. */
-    --grade-line: #2563eb;
+    --grade-line: #2b4fa8;
     /* Status: always shown with an icon and a label, never color alone. */
-    --missing: oklch(0.505 0.213 27.518);
-    --missing-soft: oklch(0.971 0.013 17.38);
-    --late: oklch(0.555 0.163 48.998);
-    --late-soft: oklch(0.987 0.022 95.277);
-    --good: oklch(0.527 0.154 150.069);
-    --good-soft: oklch(0.982 0.018 155.826);
-    --chart-1: oklch(0.646 0.222 41.116);
-    --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.87 0 0);
+    --missing: #b42318;
+    --missing-soft: #fbeae7;
+    --late: #7a5200;
+    --late-soft: #fdf3c4;
+    --good: #2a7048;
+    --good-soft: #e2f0e6;
+    --chart-1: #2b4fa8;
+    --chart-2: #2a7048;
+    --chart-3: #b42318;
+    --chart-4: #7a5200;
+    --chart-5: #565f59;
+    --radius: 0.375rem;
+    --sidebar: var(--card);
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: var(--accent);
+    --sidebar-accent-foreground: var(--accent-foreground);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.145 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.145 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.396 0.141 25.723);
-    --destructive-foreground: oklch(0.637 0.237 25.331);
-    --border: oklch(0.269 0 0);
-    --input: oklch(0.269 0 0);
-    --ring: oklch(0.439 0 0);
-    --grade-line: #3b82f6;
-    --missing: oklch(0.704 0.191 22.216);
-    --missing-soft: oklch(0.258 0.092 26.042);
-    --late: oklch(0.828 0.189 84.429);
-    --late-soft: oklch(0.279 0.077 45.635);
-    --good: oklch(0.792 0.209 151.711);
-    --good-soft: oklch(0.266 0.065 152.934);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.985 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.269 0 0);
-    --sidebar-ring: oklch(0.439 0 0);
+    /* Chalkboard: the same notebook, in chalk. */
+    --background: #1e2a25;
+    --foreground: #e6ece4;
+    --card: #23312b;
+    --card-foreground: #e6ece4;
+    --popover: #23312b;
+    --popover-foreground: #e6ece4;
+    --primary: #e6ece4;
+    --primary-foreground: #1e2a25;
+    --secondary: #2c3b34;
+    --secondary-foreground: #e6ece4;
+    --muted: #2c3b34;
+    --muted-foreground: #a3b1a8;
+    --accent: #2c3b34;
+    --accent-foreground: #e6ece4;
+    --destructive: #ff8c82;
+    --destructive-foreground: #ff8c82;
+    --border: #34453d;
+    --input: #3d5047;
+    --ring: #5f8be6;
+    --margin: #7d4545;
+    --binder: #131b18;
+    --binder-ink: #cdd7d1;
+    --highlight: #e9c95a;
+    --grade-line: #5f8be6;
+    --missing: #ff8c82;
+    --missing-soft: #3b2724;
+    --late: #ecd27a;
+    --late-soft: #3d3820;
+    --good: #84d3a0;
+    --good-soft: #213a2c;
+    --chart-1: #5f8be6;
+    --chart-2: #84d3a0;
+    --chart-3: #ff8c82;
+    --chart-4: #ecd27a;
+    --chart-5: #a3b1a8;
 }
 
 @layer base {
@@ -162,5 +172,49 @@
 
     body {
         @apply bg-background text-foreground;
+    }
+}
+
+@layer components {
+    /*
+     * A notebook sheet: a red margin line at --gutter. Rows put their
+     * margin note (period, grade level, date) left of the line.
+     */
+    .sheet {
+        --gutter: 3.25rem;
+        background-color: var(--card);
+        background-image: linear-gradient(
+            to right,
+            transparent calc(var(--gutter) - 1px),
+            var(--margin) calc(var(--gutter) - 1px),
+            var(--margin) var(--gutter),
+            transparent var(--gutter)
+        );
+    }
+
+    @media (min-width: 40rem) {
+        .sheet {
+            --gutter: 4.5rem;
+        }
+    }
+
+    .margin-row {
+        display: grid;
+        grid-template-columns: var(--gutter) minmax(0, 1fr);
+    }
+
+    .highlighted {
+        color: var(--foreground);
+        background-image: linear-gradient(
+            to bottom,
+            transparent 12%,
+            var(--highlight) 12%,
+            var(--highlight) 88%,
+            transparent 88%
+        );
+    }
+
+    .dark .highlighted {
+        color: var(--background);
     }
 }

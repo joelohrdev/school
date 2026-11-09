@@ -7,9 +7,15 @@ import {
     TrendingDown,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { Blank, Line, Page, Sheet, SheetTitle } from '@/components/notebook';
 import { Segmented } from '@/components/segmented';
 import { Button } from '@/components/ui/button';
-import { formatDay, formatPercent, formatScore, timeAgo } from '@/lib/format';
+import {
+    formatDay,
+    formatPercent,
+    formatScore,
+    formatShortDate,
+} from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { index, read, readAll } from '@/routes/alerts';
 import { show as showSection } from '@/routes/sections';
@@ -47,89 +53,109 @@ export default function AlertsIndex({ alerts, filter }: Props) {
     return (
         <>
             <Head title="Alerts" />
-            <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h1 className="text-xl font-semibold tracking-tight">
-                        Alerts
-                    </h1>
-                    {(hasUnread || filter === 'unread') && (
-                        <Form
-                            {...readAll.form()}
-                            options={{ preserveScroll: true }}
-                        >
-                            {({ processing }) => (
-                                <Button
-                                    type="submit"
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={processing}
+            <Page>
+                <Sheet>
+                    <SheetTitle
+                        title="Alerts"
+                        sub="What changed between syncs. Each one is in the morning email once."
+                        aside={
+                            (hasUnread || filter === 'unread') && (
+                                <Form
+                                    {...readAll.form()}
+                                    options={{ preserveScroll: true }}
                                 >
-                                    Mark all read
-                                </Button>
-                            )}
-                        </Form>
+                                    {({ processing }) => (
+                                        <Button
+                                            type="submit"
+                                            size="sm"
+                                            variant="outline"
+                                            disabled={processing}
+                                        >
+                                            Mark all read
+                                        </Button>
+                                    )}
+                                </Form>
+                            )
+                        }
+                    />
+                    <Line className="bg-muted/50 py-2.5">
+                        <Segmented
+                            variant="chips"
+                            label="Show"
+                            value={filter}
+                            onChange={(f) =>
+                                router.get(
+                                    index({
+                                        query:
+                                            f === 'unread'
+                                                ? { filter: 'unread' }
+                                                : {},
+                                    }).url,
+                                    {},
+                                    { preserveScroll: true },
+                                )
+                            }
+                            options={[
+                                { value: 'all', label: 'All' },
+                                { value: 'unread', label: 'Unread' },
+                            ]}
+                        />
+                    </Line>
+
+                    {alerts.data.length === 0 ? (
+                        <Blank>
+                            {filter === 'unread'
+                                ? 'All caught up.'
+                                : 'No alerts yet. They start with the second sync, once there is something to compare.'}
+                        </Blank>
+                    ) : (
+                        <ul>
+                            {alerts.data.map((a) => (
+                                <AlertItem key={a.id} alert={a} />
+                            ))}
+                        </ul>
                     )}
-                </div>
 
-                <Segmented
-                    variant="chips"
-                    label="Show"
-                    value={filter}
-                    onChange={(f) =>
-                        router.get(
-                            index({
-                                query:
-                                    f === 'unread' ? { filter: 'unread' } : {},
-                            }).url,
-                            {},
-                            { preserveScroll: true },
-                        )
-                    }
-                    options={[
-                        { value: 'all', label: 'All' },
-                        { value: 'unread', label: 'Unread' },
-                    ]}
-                />
-
-                {alerts.data.length === 0 ? (
-                    <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-                        {filter === 'unread'
-                            ? 'All caught up.'
-                            : 'No alerts yet. They appear after the second sync, when there is something to compare.'}
-                    </p>
-                ) : (
-                    <ul className="divide-y rounded-lg border">
-                        {alerts.data.map((a) => (
-                            <AlertItem key={a.id} alert={a} />
-                        ))}
-                    </ul>
-                )}
-
-                {alerts.last_page > 1 && (
-                    <nav
-                        className="flex items-center justify-between text-sm"
-                        aria-label="Pagination"
-                    >
-                        {alerts.prev_page_url ? (
-                            <Link href={alerts.prev_page_url} preserveScroll>
-                                ← Newer
-                            </Link>
-                        ) : (
-                            <span />
-                        )}
-                        <span className="text-muted-foreground">
-                            Page {alerts.current_page} of {alerts.last_page}
-                        </span>
-                        {alerts.next_page_url ? (
-                            <Link href={alerts.next_page_url} preserveScroll>
-                                Older →
-                            </Link>
-                        ) : (
-                            <span />
-                        )}
-                    </nav>
-                )}
-            </div>
+                    {alerts.last_page > 1 && (
+                        <Line
+                            ruled={false}
+                            className="border-t border-rule py-3"
+                        >
+                            <nav
+                                className="flex items-center justify-between text-sm"
+                                aria-label="Pagination"
+                            >
+                                {alerts.prev_page_url ? (
+                                    <Link
+                                        href={alerts.prev_page_url}
+                                        preserveScroll
+                                        className="font-semibold hover:underline"
+                                    >
+                                        Newer
+                                    </Link>
+                                ) : (
+                                    <span />
+                                )}
+                                <span className="text-muted-foreground">
+                                    Page {alerts.current_page} of{' '}
+                                    {alerts.last_page}
+                                </span>
+                                {alerts.next_page_url ? (
+                                    <Link
+                                        href={alerts.next_page_url}
+                                        preserveScroll
+                                        className="font-semibold hover:underline"
+                                    >
+                                        Older
+                                    </Link>
+                                ) : (
+                                    <span />
+                                )}
+                            </nav>
+                        </Line>
+                    )}
+                </Sheet>
+            </Page>
         </>
     );
 }
@@ -157,7 +183,7 @@ function AlertItem({ alert }: { alert: AlertRow }) {
                 {formatScore(p.score ?? null, p.points_possible ?? null)}
                 {p.percent !== null &&
                     p.percent !== undefined &&
-                    ` · ${formatPercent(p.percent)}`}
+                    `, ${formatPercent(p.percent)}`}
             </>
         );
     } else {
@@ -174,53 +200,76 @@ function AlertItem({ alert }: { alert: AlertRow }) {
     }
 
     return (
-        <li className={cn('flex gap-3 p-3', unread && 'bg-accent/40')}>
-            <Icon className={cn('mt-0.5 size-4 shrink-0', tone)} aria-hidden />
-            <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-                    <span className={cn('font-medium', tone)}>{label}</span>
-                    <span>{alert.student.name}</span>
-                    {p.section_id &&
-                        p.course_name &&
-                        alert.type !== 'grade_drop' && (
-                            <Link
-                                href={showSection(p.section_id)}
-                                className="hover:text-foreground hover:underline"
-                            >
-                                {p.course_name}
-                            </Link>
+        <Line
+            as="li"
+            className={cn('py-2.5', !unread && 'text-muted-foreground')}
+            margin={
+                <span title={new Date(alert.createdAt).toLocaleString()}>
+                    {formatShortDate(alert.createdAt)}
+                </span>
+            }
+        >
+            <div className="flex items-baseline gap-3">
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-3 text-xs">
+                        {unread && (
+                            <span
+                                className="-mr-1.5 size-2 rounded-full bg-missing"
+                                aria-hidden
+                            />
                         )}
-                    <span>{timeAgo(alert.createdAt)}</span>
-                </div>
-                <p className="text-sm">{body}</p>
-            </div>
-            {unread && (
-                <Form
-                    {...read.form(alert.id)}
-                    options={{ preserveScroll: true }}
-                    className="shrink-0"
-                >
-                    {({ processing }) => (
-                        <Button
-                            type="submit"
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2 text-xs"
-                            disabled={processing}
+                        <span
+                            className={cn(
+                                'inline-flex items-center gap-1 font-semibold',
+                                tone,
+                            )}
                         >
-                            <span className="sr-only">
-                                Mark {label.toLowerCase()} alert for{' '}
-                                {p.assignment_name ?? p.course_name} as{' '}
-                            </span>
-                            Read
-                        </Button>
-                    )}
-                </Form>
-            )}
-        </li>
+                            <Icon className="size-3.5" aria-hidden />
+                            {label}
+                        </span>
+                        <span className="font-semibold text-foreground">
+                            {alert.student.name}
+                        </span>
+                        {p.section_id &&
+                            p.course_name &&
+                            alert.type !== 'grade_drop' && (
+                                <Link
+                                    href={showSection(p.section_id)}
+                                    className="text-muted-foreground hover:text-foreground hover:underline"
+                                >
+                                    {p.course_name}
+                                </Link>
+                            )}
+                        {unread && <span className="sr-only">Unread</span>}
+                    </div>
+                    <p className={cn('text-sm', unread && 'text-foreground')}>
+                        {body}
+                    </p>
+                </div>
+                {unread && (
+                    <Form
+                        {...read.form(alert.id)}
+                        options={{ preserveScroll: true }}
+                        className="shrink-0"
+                    >
+                        {({ processing }) => (
+                            <Button
+                                type="submit"
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2 text-xs"
+                                disabled={processing}
+                            >
+                                <span className="sr-only">
+                                    Mark {label.toLowerCase()} alert for{' '}
+                                    {p.assignment_name ?? p.course_name} as{' '}
+                                </span>
+                                Read
+                            </Button>
+                        )}
+                    </Form>
+                )}
+            </div>
+        </Line>
     );
 }
-
-AlertsIndex.layout = {
-    breadcrumbs: [{ title: 'Alerts', href: index() }],
-};

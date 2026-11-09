@@ -42,30 +42,33 @@ const styles: Record<
     AssignmentStatus,
     { label: string; icon: typeof CircleAlert; className: string }
 > = {
+    // Red pen: underlined, like a teacher's note in the margin.
     missing: {
         label: 'Missing',
         icon: CircleAlert,
-        className: 'bg-missing-soft text-missing border-missing/25',
+        className:
+            'text-missing font-semibold underline decoration-2 underline-offset-[3px] decoration-missing/60',
     },
+    // Highlighter swipe.
     late: {
         label: 'Late',
         icon: AlarmClock,
-        className: 'bg-late-soft text-late border-late/25',
+        className: 'highlighted px-1 font-semibold',
     },
     exempt: {
         label: 'Exempt',
         icon: CircleSlash,
-        className: 'bg-muted text-muted-foreground border-transparent',
+        className: 'text-muted-foreground',
     },
     scored: {
         label: 'Scored',
         icon: CircleCheck,
-        className: 'bg-good-soft text-good border-good/25',
+        className: 'text-good',
     },
     pending: {
         label: 'Not graded',
         icon: Hourglass,
-        className: 'bg-muted text-muted-foreground border-transparent',
+        className: 'text-muted-foreground',
     },
 };
 
@@ -83,12 +86,12 @@ export function StatusBadge({
     return (
         <span
             className={cn(
-                'inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs font-medium whitespace-nowrap',
+                'inline-flex shrink-0 items-center gap-1 text-xs whitespace-nowrap',
                 tone,
                 className,
             )}
         >
-            <Icon className="size-3" aria-hidden />
+            <Icon className="size-3.5 shrink-0" aria-hidden />
             {label ?? defaultLabel}
         </span>
     );

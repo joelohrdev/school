@@ -20,6 +20,26 @@ export function formatDay(
     });
 }
 
+export function formatLongDay(day: string): string {
+    return parseDay(day).toLocaleDateString(undefined, {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+    });
+}
+
+/** 7 → "7th", 0 → "K": short enough for the page margin. */
+export function gradeOrdinal(n: number): string {
+    if (n <= 0) {
+        return n === 0 ? 'K' : 'PK';
+    }
+
+    const teen = n % 100 >= 11 && n % 100 <= 13;
+    const suffix = teen ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th');
+
+    return `${n}${suffix}`;
+}
+
 export function formatShortDay(day: string): string {
     return parseDay(day).toLocaleDateString(undefined, {
         month: 'short',
@@ -33,6 +53,21 @@ export function formatPercent(percent: number | null | undefined): string {
     }
 
     return `${Number.isInteger(percent) ? percent : percent.toFixed(1)}%`;
+}
+
+/** A timestamp's local calendar day, e.g. "Nov 9". */
+export function formatShortDate(iso: string): string {
+    return new Date(iso).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+    });
+}
+
+export function formatTime(iso: string): string {
+    return new Date(iso).toLocaleTimeString(undefined, {
+        hour: 'numeric',
+        minute: '2-digit',
+    });
 }
 
 export function formatDateTime(iso: string): string {

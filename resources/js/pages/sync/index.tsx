@@ -6,10 +6,16 @@ import {
     LoaderCircle,
 } from 'lucide-react';
 import { useEffect } from 'react';
+import { Blank, Line, Page, Sheet, SheetTitle } from '@/components/notebook';
 import { SyncNowButton } from '@/components/sync-now-button';
-import { formatDateTime, plural, timeAgo } from '@/lib/format';
+import {
+    formatDateTime,
+    formatShortDate,
+    formatTime,
+    plural,
+    timeAgo,
+} from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { index } from '@/routes/sync';
 import type { SyncRunRow } from '@/types/gradebook';
 
 type Props = { runs: SyncRunRow[]; busy: boolean };
@@ -58,92 +64,97 @@ export default function SyncIndex({ runs, busy }: Props) {
     return (
         <>
             <Head title="Sync" />
-            <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h1 className="text-xl font-semibold tracking-tight">
-                            Sync history
-                        </h1>
-                        <p className="text-sm text-muted-foreground">
-                            Runs automatically on school days at 6:30 am and
-                            3:45 pm.
-                        </p>
-                    </div>
-                    <SyncNowButton busy={busy} />
-                </div>
+            <Page>
+                <Sheet>
+                    <SheetTitle
+                        title="Sync history"
+                        sub="Runs on school days at 6:30 am and 3:45 pm."
+                        aside={<SyncNowButton busy={busy} />}
+                    />
 
-                {runs.length === 0 ? (
-                    <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-                        No syncs yet.
-                    </p>
-                ) : (
-                    <ul className="divide-y rounded-lg border">
-                        {runs.map((run) => {
-                            const {
-                                label,
-                                icon: Icon,
-                                tone,
-                            } = statusMeta[run.status];
+                    {runs.length === 0 ? (
+                        <Blank>
+                            No syncs yet. Sync now to pull the first grades.
+                        </Blank>
+                    ) : (
+                        <ul>
+                            {runs.map((run) => {
+                                const {
+                                    label,
+                                    icon: Icon,
+                                    tone,
+                                } = statusMeta[run.status];
 
-                            return (
-                                <li key={run.id} className="p-3">
-                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                        <span
-                                            className={cn(
-                                                'inline-flex items-center gap-1.5 text-sm font-medium',
-                                                tone,
-                                            )}
-                                        >
-                                            <Icon
-                                                className={cn(
-                                                    'size-4',
-                                                    run.status === 'running' &&
-                                                        'animate-spin',
+                                return (
+                                    <Line
+                                        key={run.id}
+                                        as="li"
+                                        className="py-2.5"
+                                        margin={
+                                            <span
+                                                title={formatDateTime(
+                                                    run.startedAt,
                                                 )}
-                                                aria-hidden
-                                            />
-                                            {label}
-                                        </span>
-                                        <span
-                                            className="text-sm"
-                                            title={formatDateTime(
-                                                run.startedAt,
-                                            )}
-                                        >
-                                            {formatDateTime(run.startedAt)}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                            {triggerLabel[run.trigger]}
-                                            {run.dryRun && ' · dry run'}
-                                            {run.durationSeconds !== null &&
-                                                ` · ${run.durationSeconds}s`}
-                                        </span>
-                                        <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-                                            {run.status === 'succeeded'
-                                                ? `${run.totals.created} new · ${run.totals.updated} changed · ${plural(run.alerts, 'alert')}`
-                                                : timeAgo(run.startedAt)}
-                                        </span>
-                                    </div>
-                                    {run.error && (
-                                        <details className="mt-1.5">
-                                            <summary className="cursor-pointer text-xs text-muted-foreground">
-                                                Error details
-                                            </summary>
-                                            <pre className="mt-1 overflow-x-auto rounded-md bg-muted p-2 text-xs whitespace-pre-wrap">
-                                                {run.error}
-                                            </pre>
-                                        </details>
-                                    )}
-                                </li>
-                            );
-                        })}
-                    </ul>
-                )}
-            </div>
+                                            >
+                                                {formatShortDate(run.startedAt)}
+                                            </span>
+                                        }
+                                    >
+                                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                                            <span
+                                                className={cn(
+                                                    'inline-flex items-center gap-1.5 self-center text-sm font-semibold',
+                                                    tone,
+                                                )}
+                                            >
+                                                <Icon
+                                                    className={cn(
+                                                        'size-4',
+                                                        run.status ===
+                                                            'running' &&
+                                                            'animate-spin',
+                                                    )}
+                                                    aria-hidden
+                                                />
+                                                {label}
+                                            </span>
+                                            <span className="text-sm">
+                                                {formatTime(run.startedAt)}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                                {[
+                                                    triggerLabel[run.trigger],
+                                                    run.dryRun && 'dry run',
+                                                    run.durationSeconds !==
+                                                        null &&
+                                                        `${run.durationSeconds}s`,
+                                                ]
+                                                    .filter(Boolean)
+                                                    .join(', ')}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground tabular-nums sm:ml-auto">
+                                                {run.status === 'succeeded'
+                                                    ? `${run.totals.created} new, ${run.totals.updated} changed, ${plural(run.alerts, 'alert')}`
+                                                    : timeAgo(run.startedAt)}
+                                            </span>
+                                        </div>
+                                        {run.error && (
+                                            <details className="mt-1.5 mb-1">
+                                                <summary className="cursor-pointer text-xs text-muted-foreground">
+                                                    Error details
+                                                </summary>
+                                                <p className="mt-1 border-l-2 border-missing pl-2 text-xs whitespace-pre-wrap">
+                                                    {run.error}
+                                                </p>
+                                            </details>
+                                        )}
+                                    </Line>
+                                );
+                            })}
+                        </ul>
+                    )}
+                </Sheet>
+            </Page>
         </>
     );
 }
-
-SyncIndex.layout = {
-    breadcrumbs: [{ title: 'Sync', href: index() }],
-};

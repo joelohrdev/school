@@ -4,6 +4,13 @@ import { useMemo, useState } from 'react';
 import { AssignmentList } from '@/components/grades/assignment-list';
 import { GradeHistoryChart } from '@/components/grades/grade-history-chart';
 import { GradeValue } from '@/components/grades/grade-value';
+import {
+    Line,
+    LineHeading,
+    Page,
+    Sheet,
+    SheetTitle,
+} from '@/components/notebook';
 import { Segmented } from '@/components/segmented';
 import { show as showStudent } from '@/routes/students';
 import type {
@@ -46,95 +53,117 @@ export default function SectionShow({
 
     return (
         <>
-            <Head title={`${section.course} · ${student.name}`} />
-            <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 p-4">
-                <div>
-                    <Link
-                        href={showStudent(student.id)}
-                        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-                    >
-                        <ArrowLeft className="size-4" aria-hidden />
-                        {student.name}
-                    </Link>
-                    <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
-                        <div>
-                            <h1 className="text-2xl font-semibold tracking-tight">
-                                {section.course}
-                            </h1>
-                            <p className="text-sm text-muted-foreground">
-                                {[
-                                    section.period &&
-                                        `Period ${section.period}`,
-                                    section.room && `Room ${section.room}`,
-                                    section.teacher,
-                                ]
-                                    .filter(Boolean)
-                                    .join(' · ')}
-                            </p>
-                            {section.teacherEmail && (
-                                <a
-                                    href={`mailto:${section.teacherEmail}`}
-                                    className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground hover:underline"
+            <Head title={`${section.course}, ${student.name}`} />
+            <Page>
+                <Link
+                    href={showStudent(student.id)}
+                    className="inline-flex items-center gap-1 self-start px-4 pt-4 text-sm font-semibold text-muted-foreground hover:text-foreground sm:px-0 sm:pt-0"
+                >
+                    <ArrowLeft className="size-4" aria-hidden />
+                    {student.name}
+                </Link>
+                <Sheet>
+                    <SheetTitle
+                        margin={
+                            section.period && (
+                                <span
+                                    title={`Period ${section.period}`}
+                                    className="text-sm font-semibold"
                                 >
-                                    <Mail className="size-3.5" aria-hidden />
-                                    {section.teacherEmail}
-                                </a>
-                            )}
-                        </div>
-                        <div className="text-right">
+                                    <span className="sr-only">Period </span>
+                                    {section.period.match(/^\d+/)?.[0] ??
+                                        section.period}
+                                </span>
+                            )
+                        }
+                        title={section.course}
+                        sub={
+                            <div className="flex flex-col gap-0.5">
+                                <span className="flex flex-wrap gap-x-3">
+                                    {section.teacher && (
+                                        <span>{section.teacher}</span>
+                                    )}
+                                    {section.room && (
+                                        <span>Room {section.room}</span>
+                                    )}
+                                    {section.term && (
+                                        <span>{section.term}</span>
+                                    )}
+                                </span>
+                                {section.teacherEmail && (
+                                    <a
+                                        href={`mailto:${section.teacherEmail}`}
+                                        className="inline-flex items-center gap-1 self-start hover:text-foreground hover:underline"
+                                    >
+                                        <Mail
+                                            className="size-3.5"
+                                            aria-hidden
+                                        />
+                                        Email {section.teacher ?? 'teacher'}
+                                    </a>
+                                )}
+                            </div>
+                        }
+                        aside={
                             <GradeValue
                                 percent={section.percent}
                                 letter={section.letter}
                                 size="lg"
                             />
-                            {section.term && (
-                                <p className="text-xs text-muted-foreground">
-                                    Current grade · {section.term}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <section className="rounded-xl border p-4">
-                    <h2 className="mb-3 text-sm font-medium">Grade history</h2>
-                    <GradeHistoryChart points={section.history} />
-                </section>
-
-                <section className="space-y-3">
-                    <h2 className="text-sm font-medium">Assignments</h2>
-                    {categories.length > 1 && (
-                        <Segmented
-                            variant="chips"
-                            label="Filter by category"
-                            value={category}
-                            onChange={setCategory}
-                            options={[
-                                {
-                                    value: 'all',
-                                    label: 'All',
-                                    count: assignments.length,
-                                },
-                                ...categories.map((c) => ({
-                                    value: c,
-                                    label: c,
-                                    count: assignments.filter(
-                                        (a) =>
-                                            (a.category ?? 'Uncategorized') ===
-                                            c,
-                                    ).length,
-                                })),
-                            ]}
-                        />
-                    )}
-                    <AssignmentList
-                        assignments={visible}
-                        today={today}
-                        showCourse={false}
-                        empty="No assignments in this class yet."
+                        }
                     />
-                </section>
-            </div>
+
+                    <section aria-labelledby="grade-history">
+                        <LineHeading id="grade-history">
+                            Grade history
+                        </LineHeading>
+                        <Line ruled={false} className="py-4">
+                            <GradeHistoryChart points={section.history} />
+                        </Line>
+                    </section>
+
+                    <section aria-labelledby="class-assignments">
+                        <LineHeading
+                            id="class-assignments"
+                            margin={<span className="sr-only">Due</span>}
+                        >
+                            Assignments
+                        </LineHeading>
+                        {categories.length > 1 && (
+                            <Line className="py-2.5">
+                                <Segmented
+                                    variant="chips"
+                                    label="Filter by category"
+                                    value={category}
+                                    onChange={setCategory}
+                                    options={[
+                                        {
+                                            value: 'all',
+                                            label: 'All',
+                                            count: assignments.length,
+                                        },
+                                        ...categories.map((c) => ({
+                                            value: c,
+                                            label: c,
+                                            count: assignments.filter(
+                                                (a) =>
+                                                    (a.category ??
+                                                        'Uncategorized') === c,
+                                            ).length,
+                                        })),
+                                    ]}
+                                />
+                            </Line>
+                        )}
+                        <AssignmentList
+                            assignments={visible}
+                            today={today}
+                            showCourse={false}
+                            empty="No assignments in this class yet."
+                        />
+                    </section>
+                </Sheet>
+            </Page>
         </>
     );
 }

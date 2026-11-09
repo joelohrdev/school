@@ -1,12 +1,21 @@
 import { Head, Link } from '@inertiajs/react';
-import { GraduationCap } from 'lucide-react';
 import { ClassList } from '@/components/grades/class-list';
 import { CountBadge } from '@/components/grades/status-badge';
 import { LastSync } from '@/components/last-sync';
+import {
+    Line,
+    LineHeading,
+    Page,
+    Sheet,
+    SheetTitle,
+} from '@/components/notebook';
 import { SyncNowButton } from '@/components/sync-now-button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { formatDay, plural } from '@/lib/format';
-import { dashboard } from '@/routes';
+import {
+    formatLongDay,
+    formatShortDay,
+    gradeOrdinal,
+    plural,
+} from '@/lib/format';
 import { show as showSection } from '@/routes/sections';
 import { show as showStudent } from '@/routes/students';
 import type { StudentSummary, SyncRunRow } from '@/types/gradebook';
@@ -22,12 +31,12 @@ const MISSING_PREVIEW = 5;
 export default function Dashboard({ students, lastSync, today }: Props) {
     return (
         <>
-            <Head title="Dashboard" />
-            <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+            <Head title="Overview" />
+            <Page>
+                <div className="flex flex-wrap items-end justify-between gap-3 px-4 pt-5 sm:px-0 sm:pt-0">
                     <div>
-                        <h1 className="text-xl font-semibold tracking-tight">
-                            {formatDay(today)}
+                        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+                            {formatLongDay(today)}
                         </h1>
                         <LastSync run={lastSync} />
                     </div>
@@ -35,136 +44,134 @@ export default function Dashboard({ students, lastSync, today }: Props) {
                 </div>
 
                 {students.length === 0 ? (
-                    <Card className="items-center gap-3 py-12 text-center">
-                        <GraduationCap
-                            className="size-8 text-muted-foreground"
-                            aria-hidden
-                        />
-                        <div>
-                            <p className="font-medium">No kids yet</p>
+                    <Sheet>
+                        <SheetTitle level={2} title="No kids yet" />
+                        <Line ruled={false} className="pb-6">
                             <p className="text-sm text-muted-foreground">
-                                Set your PowerSchool login in .env, then run a
-                                sync.
+                                Add your PowerSchool login to .env, then sync.
+                                Each kid gets their own page here.
                             </p>
-                        </div>
-                        <SyncNowButton />
-                    </Card>
+                        </Line>
+                    </Sheet>
                 ) : (
-                    <div className="grid gap-4 lg:grid-cols-2">
-                        {students.map((s) => (
-                            <StudentCard key={s.id} student={s} />
-                        ))}
-                    </div>
+                    students.map((s) => <StudentSheet key={s.id} student={s} />)
                 )}
-            </div>
+            </Page>
         </>
     );
 }
 
-function StudentCard({ student }: { student: StudentSummary }) {
+function StudentSheet({ student }: { student: StudentSummary }) {
     const extra = student.missing.length - MISSING_PREVIEW;
+    const clear = student.missingCount === 0 && student.lateCount === 0;
 
     return (
-        <Card className="gap-4 py-4">
-            <CardHeader className="flex flex-row items-start justify-between gap-2 px-4">
-                <div>
+        <Sheet aria-labelledby={`kid-${student.id}`}>
+            <SheetTitle
+                level={2}
+                id={`kid-${student.id}`}
+                margin={
+                    student.gradeLevel !== null && (
+                        <span title={`Grade ${student.gradeLevel}`}>
+                            {gradeOrdinal(student.gradeLevel)}
+                        </span>
+                    )
+                }
+                title={
                     <Link
                         href={showStudent(student.id)}
-                        className="text-lg font-semibold hover:underline"
+                        className="hover:underline hover:decoration-rule hover:decoration-4 hover:underline-offset-[6px]"
                         prefetch
                     >
                         {student.name}
                     </Link>
-                    {student.gradeLevel !== null && (
-                        <p className="text-xs text-muted-foreground">
-                            Grade {student.gradeLevel}
-                        </p>
-                    )}
-                </div>
-                <div className="flex flex-wrap justify-end gap-1.5">
-                    <CountBadge status="missing" count={student.missingCount} />
-                    <CountBadge status="late" count={student.lateCount} />
-                    {student.missingCount === 0 && student.lateCount === 0 && (
-                        <span className="text-xs text-muted-foreground">
-                            Nothing missing
+                }
+                aside={
+                    clear ? (
+                        <span className="text-sm text-good">
+                            Nothing missing or late
                         </span>
-                    )}
-                </div>
-            </CardHeader>
-            <CardContent className="space-y-4 px-4">
-                {student.missing.length > 0 && (
-                    <section aria-labelledby={`missing-${student.id}`}>
-                        <h2
-                            id={`missing-${student.id}`}
-                            className="mb-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Missing work
-                        </h2>
-                        <ul className="divide-y rounded-lg border border-missing/25 bg-missing-soft/40">
-                            {student.missing
-                                .slice(0, MISSING_PREVIEW)
-                                .map((m) => (
-                                    <li
-                                        key={m.id}
-                                        className="flex items-center gap-3 px-3 py-2"
-                                    >
-                                        <div className="min-w-0 flex-1">
-                                            <div className="truncate text-sm font-medium">
-                                                {m.name}
-                                            </div>
-                                            <Link
-                                                href={showSection(m.sectionId)}
-                                                className="truncate text-xs text-muted-foreground hover:underline"
-                                            >
-                                                {m.course}
-                                            </Link>
-                                        </div>
-                                        <div className="text-right text-xs">
-                                            <div>{formatDay(m.dueOn)}</div>
-                                            {m.daysOverdue !== null &&
-                                                m.daysOverdue > 0 && (
-                                                    <div className="text-missing">
-                                                        {plural(
-                                                            m.daysOverdue,
-                                                            'day',
-                                                        )}{' '}
-                                                        overdue
-                                                    </div>
-                                                )}
-                                        </div>
-                                    </li>
-                                ))}
-                        </ul>
-                        {extra > 0 && (
-                            <Link
-                                href={showStudent(student.id, {
-                                    query: {
-                                        tab: 'assignments',
-                                        filter: 'missing',
-                                    },
-                                })}
-                                className="mt-1.5 inline-block text-xs text-muted-foreground hover:text-foreground hover:underline"
-                            >
-                                +{extra} more missing
-                            </Link>
-                        )}
-                    </section>
-                )}
+                    ) : (
+                        <>
+                            <CountBadge
+                                status="missing"
+                                count={student.missingCount}
+                            />
+                            <CountBadge
+                                status="late"
+                                count={student.lateCount}
+                            />
+                        </>
+                    )
+                }
+            />
 
-                <section aria-labelledby={`classes-${student.id}`}>
-                    <h2
-                        id={`classes-${student.id}`}
-                        className="mb-0.5 text-xs font-medium tracking-wide text-muted-foreground uppercase"
+            {student.missing.length > 0 && (
+                <section aria-labelledby={`missing-${student.id}`}>
+                    <LineHeading
+                        id={`missing-${student.id}`}
+                        margin={<span className="sr-only">Due</span>}
                     >
-                        Classes
-                    </h2>
-                    <ClassList classes={student.classes} />
+                        Missing work
+                    </LineHeading>
+                    <ul>
+                        {student.missing.slice(0, MISSING_PREVIEW).map((m) => (
+                            <Line
+                                key={m.id}
+                                as="li"
+                                margin={m.dueOn && formatShortDay(m.dueOn)}
+                                className="py-2"
+                            >
+                                <div className="flex items-baseline justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <div className="truncate font-semibold">
+                                            {m.name}
+                                        </div>
+                                        <Link
+                                            href={showSection(m.sectionId)}
+                                            className="truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
+                                        >
+                                            {m.course}
+                                        </Link>
+                                    </div>
+                                    {m.daysOverdue !== null &&
+                                        m.daysOverdue > 0 && (
+                                            <span className="shrink-0 text-xs font-semibold text-missing">
+                                                {plural(m.daysOverdue, 'day')}{' '}
+                                                overdue
+                                            </span>
+                                        )}
+                                </div>
+                            </Line>
+                        ))}
+                        {extra > 0 && (
+                            <Line as="li" className="py-2">
+                                <Link
+                                    href={showStudent(student.id, {
+                                        query: {
+                                            tab: 'assignments',
+                                            filter: 'missing',
+                                        },
+                                    })}
+                                    className="text-sm font-semibold text-missing hover:underline"
+                                >
+                                    See all {student.missing.length} missing
+                                </Link>
+                            </Line>
+                        )}
+                    </ul>
                 </section>
-            </CardContent>
-        </Card>
+            )}
+
+            <section aria-labelledby={`classes-${student.id}`}>
+                <LineHeading
+                    id={`classes-${student.id}`}
+                    margin={<span className="sr-only">Period</span>}
+                >
+                    Classes
+                </LineHeading>
+                <ClassList classes={student.classes} />
+            </section>
+        </Sheet>
     );
 }
-
-Dashboard.layout = {
-    breadcrumbs: [{ title: 'Dashboard', href: dashboard() }],
-};
