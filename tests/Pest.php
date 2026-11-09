@@ -2,6 +2,7 @@
 
 use App\Services\PowerSchool\UserSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -64,20 +65,59 @@ function fakePowerSchoolSession(): UserSession
 }
 
 /**
+ * @return array<string, mixed>
+ */
+function powerschoolFixtureData(string $name): array
+{
+    return json_decode(powerschoolFixture($name), true, flags: JSON_THROW_ON_ERROR);
+}
+
+/**
  * Fake the PowerSchool host as a digest-protected server: requests without an
  * Authorization header get a 401 challenge, authorized ones get the response.
+ *
+ * Pass one response for every call, or a map of SOAP method => response.
+ * A response is a fixture name, a literal body, or decoded data.
+ *
+ * @param  string|array<string, string|array<string, mixed>>  $responses
  */
-function fakePowerSchool(string $fixtureOrBody): void
+function fakePowerSchool(string|array $responses): void
 {
-    $body = preg_match('/^[a-z_]+$/D', $fixtureOrBody) === 1 ? powerschoolFixture($fixtureOrBody) : $fixtureOrBody;
+    $toBody = fn (string|array $r): string => match (true) {
+        is_array($r) => json_encode($r, JSON_THROW_ON_ERROR),
+        preg_match('/^[a-z_]+$/D', $r) === 1 => powerschoolFixture($r),
+        default => $r,
+    };
 
-    Http::fake(['ps.example.test/*' => function (Request $request) use ($body) {
+    $byMethod = is_array($responses) ? array_map($toBody, $responses) : null;
+    $single = is_string($responses) ? $toBody($responses) : null;
+
+    // Replace, not stack: Http::fake() keeps earlier stubs and the first match wins.
+    Http::swap(new Factory);
+    Http::preventStrayRequests();
+
+    Http::fake(['ps.example.test/*' => function (Request $request) use ($byMethod, $single) {
         if (! $request->hasHeader('Authorization')) {
             return Http::response('', 401, [
                 'WWW-Authenticate' => 'Digest realm="PowerSchool", nonce="fakenonce", qop="auth", algorithm=MD5',
             ]);
         }
 
-        return Http::response($body);
+        $method = trim($request->header('SOAPAction')[0] ?? '', '"');
+
+        return Http::response($single ?? $byMethod[$method] ?? throw new RuntimeException("No fake for {$method}"));
     }]);
+}
+
+/**
+ * Fake a full successful sync: login, then the given student data.
+ *
+ * @param  string|array<string, mixed>  $studentData
+ */
+function fakePowerSchoolSync(string|array $studentData = 'student_data'): void
+{
+    fakePowerSchool([
+        'loginToPublicPortal' => 'login_success',
+        'getStudentData' => $studentData,
+    ]);
 }
