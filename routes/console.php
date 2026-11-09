@@ -10,6 +10,9 @@ Artisan::command('inspire', function () {
 
 Schedule::command('model:prune')->dailyAt('03:00')->timezone(config('powerschool.timezone'));
 
+// The database is the only copy of the grade history. See config/backup.php.
+Schedule::command('backup:database')->dailyAt('02:30')->timezone(config('powerschool.timezone'));
+
 // Weekday syncs before school and after the school day, in district time.
 // The command skips itself on days in notInSessionDays when no kid has school.
 // Only the morning run emails the digest, which covers everything since the last one.
