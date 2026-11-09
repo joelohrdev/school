@@ -37,6 +37,7 @@ class SyncService
     public function __construct(
         private readonly PowerSchoolClient $client,
         private readonly CurrentGradeResolver $grades,
+        private readonly ChangeDetector $changes,
     ) {}
 
     public function run(bool $dryRun = false, string $trigger = SyncRun::TRIGGER_CLI): SyncResult
@@ -149,6 +150,9 @@ class SyncService
         );
         $counts->record('students', $student);
 
+        // A kid's first sync is the baseline: existing history raises no alerts.
+        $baseline = $student->wasRecentlyCreated;
+
         $teachers = $this->upsert(Teacher::class, 'teachers', $vo['teachers'] ?? [], [], $counts, fn (array $t) => [
             'first_name' => Value::str($t['firstName'] ?? null),
             'last_name' => Value::str($t['lastName'] ?? null),
@@ -234,6 +238,7 @@ class SyncService
             }
 
             $score = AssignmentScore::firstOrNew(['student_id' => $student->id, 'ps_id' => $psId]);
+            $before = $this->changes->scoreState($score);
             $score->fill([
                 'assignment_id' => $assignmentId,
                 'score' => Value::str($sc['score'] ?? null),
@@ -252,6 +257,10 @@ class SyncService
             $score->save();
 
             $counts->record('assignment_scores', $score);
+
+            foreach ($this->changes->scoreChanged($student, $score, $before, $run, $baseline) as $alert) {
+                $counts->record('alerts', $alert);
+            }
         }
 
         foreach ($vo['finalGrades'] ?? [] as $fg) {
@@ -276,7 +285,7 @@ class SyncService
             $counts->record('final_grades', $grade);
         }
 
-        $this->snapshot($student, $counts, $now);
+        $this->snapshot($student, $run, $counts, $now, $baseline);
 
         RawPayload::create(['student_id' => $student->id, 'sync_run_id' => $run->id, 'payload' => $vo]);
     }
@@ -285,21 +294,30 @@ class SyncService
      * One snapshot per section per (district-local) day; a later sync the
      * same day overwrites it.
      */
-    private function snapshot(Student $student, SyncCounts $counts, CarbonImmutable $now): void
+    private function snapshot(Student $student, SyncRun $run, SyncCounts $counts, CarbonImmutable $now, bool $baseline): void
     {
         $today = $now->setTimezone((string) config('powerschool.timezone'));
 
-        $student->sections()->with('finalGrades.reportingTerm')->get()->each(function (Section $section) use ($student, $counts, $today) {
+        $student->sections()->with('finalGrades.reportingTerm')->get()->each(function (Section $section) use ($student, $run, $counts, $today, $baseline) {
             $current = $this->grades->pick($section->finalGrades, $today);
 
             if ($current === null) {
                 return;
             }
 
-            $snapshot = GradeSnapshot::query()
+            $previous = GradeSnapshot::query()
                 ->where('section_id', $section->id)
-                ->whereDate('snapshot_on', $today->toDateString())
-                ->first() ?? new GradeSnapshot(['section_id' => $section->id, 'snapshot_on' => $today->toDateString()]);
+                ->whereDate('snapshot_on', '<=', $today->toDateString())
+                ->latest('snapshot_on')
+                ->first();
+
+            if ($alert = $this->changes->gradeChanged($student, $section, $previous, $current, $run, $baseline)) {
+                $counts->record('alerts', $alert);
+            }
+
+            $snapshot = $previous?->snapshot_on->isSameDay($today)
+                ? $previous
+                : new GradeSnapshot(['section_id' => $section->id, 'snapshot_on' => $today->toDateString()]);
 
             $snapshot->fill([
                 'student_id' => $student->id,

@@ -45,4 +45,18 @@ return [
 
     'timeout' => (int) env('POWERSCHOOL_TIMEOUT', 30),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Alerts and digest
+    |--------------------------------------------------------------------------
+    |
+    | A class grade falling by at least this many percentage points since the
+    | last snapshot raises an alert. The digest goes to MAIL_TO_PARENT.
+    |
+    */
+
+    'grade_drop_threshold' => (float) env('POWERSCHOOL_GRADE_DROP_THRESHOLD', 3),
+
+    'digest_to' => env('MAIL_TO_PARENT'),
+
 ];

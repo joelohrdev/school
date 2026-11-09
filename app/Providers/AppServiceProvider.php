@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\PowerSchool\ChangeDetector;
 use App\Services\PowerSchool\PowerSchoolClient;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -17,6 +18,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(PowerSchoolClient::class, fn (): PowerSchoolClient => PowerSchoolClient::fromConfig());
+        $this->app->bind(ChangeDetector::class, fn (): ChangeDetector => ChangeDetector::fromConfig());
         //
     }
 
