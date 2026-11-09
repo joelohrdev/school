@@ -11,7 +11,7 @@ Artisan::command('inspire', function () {
 Schedule::command('model:prune')->dailyAt('03:00')->timezone(config('powerschool.timezone'));
 
 // Weekday syncs before school and after the school day, in district time.
-// Days in notInSessionDays are not skipped yet: that collection's fields are unmapped.
+// The command skips itself on days in notInSessionDays when no kid has school.
 foreach (['06:30', '15:45'] as $time) {
     Schedule::command('powerschool:sync --trigger=schedule')
         ->weekdays()

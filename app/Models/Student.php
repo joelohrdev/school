@@ -62,6 +62,12 @@ class Student extends Model
         return $this->hasMany(Alert::class);
     }
 
+    /** @return HasMany<AttendanceRecord, $this> */
+    public function attendanceRecords(): HasMany
+    {
+        return $this->hasMany(AttendanceRecord::class);
+    }
+
     /** @return HasMany<RawPayload, $this> */
     public function rawPayloads(): HasMany
     {

@@ -2,8 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Models\NotInSessionDay;
 use App\Models\SyncRun;
 use App\Services\PowerSchool\SyncService;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 
 class SyncPowerSchool extends Command
@@ -22,6 +24,14 @@ class SyncPowerSchool extends Command
             $this->error("Unknown trigger [{$trigger}].");
 
             return self::INVALID;
+        }
+
+        $today = CarbonImmutable::now((string) config('powerschool.timezone'));
+
+        if ($trigger === SyncRun::TRIGGER_SCHEDULE && NotInSessionDay::isDayOff($today)) {
+            $this->info('No school today; skipping the scheduled sync.');
+
+            return self::SUCCESS;
         }
 
         $result = $sync->run(dryRun: (bool) $this->option('dry-run'), trigger: $trigger);

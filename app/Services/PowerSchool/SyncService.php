@@ -5,8 +5,10 @@ namespace App\Services\PowerSchool;
 use App\Models\Assignment;
 use App\Models\AssignmentCategory;
 use App\Models\AssignmentScore;
+use App\Models\AttendanceRecord;
 use App\Models\FinalGrade;
 use App\Models\GradeSnapshot;
+use App\Models\NotInSessionDay;
 use App\Models\RawPayload;
 use App\Models\ReportingTerm;
 use App\Models\Section;
@@ -285,9 +287,96 @@ class SyncService
             $counts->record('final_grades', $grade);
         }
 
+        $this->syncDaysOff($vo['notInSessionDays'] ?? [], $counts);
+        $this->syncAttendance($student, $vo['attendance'] ?? [], $vo['attendanceCodes'] ?? [], $counts);
+
         $this->snapshot($student, $run, $counts, $now, $baseline);
 
         RawPayload::create(['student_id' => $student->id, 'sync_run_id' => $run->id, 'payload' => $vo]);
+    }
+
+    /**
+     * Field names for notInSessionDays are unconfirmed, so several likely
+     * spellings are tried and rows without a readable date are skipped.
+     *
+     * @param  list<mixed>  $rows
+     */
+    private function syncDaysOff(array $rows, SyncCounts $counts): void
+    {
+        foreach ($rows as $row) {
+            $date = is_array($row) ? Value::date(self::first($row, ['calendarDay', 'date', 'calendarDate', 'day'])) : null;
+
+            if ($date === null) {
+                $counts->skip('not_in_session_days');
+
+                continue;
+            }
+
+            $school = Value::int(self::first($row, ['schoolNumber', 'schoolid', 'schoolId', 'school_number'])) ?? 0;
+
+            $day = NotInSessionDay::query()->where('school_number', $school)->whereDate('date', $date)->first()
+                ?? new NotInSessionDay(['school_number' => $school, 'date' => $date]);
+
+            $day->fill(['description' => Value::str(self::first($row, ['description', 'name', 'note', 'type']))])->save();
+            $counts->record('not_in_session_days', $day);
+        }
+    }
+
+    /**
+     * Field names for attendance and attendanceCodes are unconfirmed; the
+     * names below follow PowerSchool's own column names.
+     *
+     * @param  list<mixed>  $rows
+     * @param  list<mixed>  $codeRows
+     */
+    private function syncAttendance(Student $student, array $rows, array $codeRows, SyncCounts $counts): void
+    {
+        $codes = [];
+
+        foreach ($codeRows as $c) {
+            if (is_array($c) && ($id = Value::int($c['id'] ?? null)) !== null) {
+                $codes[$id] = [
+                    'code' => Value::str(self::first($c, ['attCode', 'code'])),
+                    'description' => Value::str(self::first($c, ['description', 'name'])),
+                ];
+            }
+        }
+
+        foreach ($rows as $row) {
+            $psId = is_array($row) ? Value::int($row['id'] ?? null) : null;
+            $date = is_array($row) ? Value::date(self::first($row, ['attDate', 'date', 'attendanceDate'])) : null;
+
+            if ($psId === null || $date === null) {
+                $counts->skip('attendance_records');
+
+                continue;
+            }
+
+            $code = $codes[Value::int(self::first($row, ['attCodeid', 'attCodeId', 'attendanceCodeId']))] ?? ['code' => null, 'description' => null];
+
+            $record = AttendanceRecord::updateOrCreate(['student_id' => $student->id, 'ps_id' => $psId], [
+                'date' => $date,
+                'code' => $code['code'],
+                'description' => $code['description'],
+                'ps_period_id' => Value::int(self::first($row, ['periodid', 'periodId'])),
+            ]);
+            $counts->record('attendance_records', $record);
+        }
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $row
+     * @param  list<string>  $keys
+     */
+    private static function first(array $row, array $keys): mixed
+    {
+        foreach ($keys as $key) {
+            if (($row[$key] ?? null) !== null) {
+                return $row[$key];
+            }
+        }
+
+        return null;
     }
 
     /**

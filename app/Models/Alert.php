@@ -18,10 +18,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $type
  * @property array<string, mixed> $payload
  * @property CarbonImmutable|null $read_at
+ * @property CarbonImmutable|null $notified_at
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  */
-#[Fillable(['student_id', 'sync_run_id', 'type', 'payload', 'read_at'])]
+#[Fillable(['student_id', 'sync_run_id', 'type', 'payload', 'read_at', 'notified_at'])]
 class Alert extends Model
 {
     public const TYPE_MISSING = 'missing';
@@ -39,6 +40,7 @@ class Alert extends Model
         return [
             'payload' => 'array',
             'read_at' => 'datetime',
+            'notified_at' => 'datetime',
         ];
     }
 
@@ -58,6 +60,12 @@ class Alert extends Model
     public function scopeUnread(Builder $query): void
     {
         $query->whereNull('read_at');
+    }
+
+    /** @param Builder<self> $query */
+    public function scopeUnnotified(Builder $query): void
+    {
+        $query->whereNull('notified_at');
     }
 
     public function markAsRead(): void
