@@ -12,8 +12,9 @@ Schedule::command('model:prune')->dailyAt('03:00')->timezone(config('powerschool
 
 // Weekday syncs before school and after the school day, in district time.
 // The command skips itself on days in notInSessionDays when no kid has school.
-foreach (['06:30', '15:45'] as $time) {
-    Schedule::command('powerschool:sync --trigger=schedule')
+// Only the morning run emails the digest, which covers everything since the last one.
+foreach (['06:30' => ' --digest', '15:45' => ''] as $time => $digest) {
+    Schedule::command('powerschool:sync --trigger=schedule'.$digest)
         ->weekdays()
         ->at($time)
         ->timezone(config('powerschool.timezone'))
