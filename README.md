@@ -21,13 +21,14 @@ Laravel 13, Inertia, React, TypeScript and Tailwind (React starter kit with Fort
   in one transaction per kid. Running it twice changes nothing the second time.
 - `App\Services\PowerSchool\ChangeDetector` compares each run with the previous state
   and raises alerts:
-  - work newly marked missing or late
-  - missing work turned in or excused
-  - newly posted scores
-  - a class grade falling by at least `POWERSCHOOL_GRADE_DROP_THRESHOLD` points since
-    the last snapshot
+    - work newly marked missing or late
+    - missing work turned in or excused
+    - newly posted scores
+    - a class grade falling by at least `POWERSCHOOL_GRADE_DROP_THRESHOLD` points since
+      the last snapshot
 
-  A kid's first sync is a baseline, so it raises nothing.
+    A kid's first sync is a baseline, so it raises nothing.
+
 - The 06:30 run emails a digest to `MAIL_TO_PARENT` covering every alert not yet
   emailed: newly missing work, still missing (count and oldest), grade drops and new
   scores. No change, no email.
@@ -50,15 +51,15 @@ herd link school && herd secure school   # serves https://school.test
 
 Then edit `.env`:
 
-| Key | What |
-| --- | --- |
-| `APP_URL` | `https://school.test` locally, your real URL in production |
-| `POWERSCHOOL_BASE_URL` | the district instance, e.g. `https://d118-powerschool.info` |
-| `POWERSCHOOL_USERNAME` / `POWERSCHOOL_PASSWORD` | the parent portal login |
-| `POWERSCHOOL_TIMEZONE` | `America/Chicago` |
-| `POWERSCHOOL_GRADE_DROP_THRESHOLD` | points a class grade must fall to alert (default 3) |
-| `MAIL_TO_PARENT` | where the digest goes; leave blank to disable it |
-| `MAIL_MAILER` etc. | a real mailer in production; `log` locally writes mail to `storage/logs/laravel.log` |
+| Key                                             | What                                                                                 |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `APP_URL`                                       | `https://school.test` locally, your real URL in production                           |
+| `POWERSCHOOL_BASE_URL`                          | the district instance, e.g. `https://d118-powerschool.info`                          |
+| `POWERSCHOOL_USERNAME` / `POWERSCHOOL_PASSWORD` | the parent portal login                                                              |
+| `POWERSCHOOL_TIMEZONE`                          | `America/Chicago`                                                                    |
+| `POWERSCHOOL_GRADE_DROP_THRESHOLD`              | points a class grade must fall to alert (default 3)                                  |
+| `MAIL_TO_PARENT`                                | where the digest goes; leave blank to disable it                                     |
+| `MAIL_MAILER` etc.                              | a real mailer in production; `log` locally writes mail to `storage/logs/laravel.log` |
 
 The mobile-app digest credentials (`pearson` / `m0bApP5`) are public, static values
 baked into the old app. They're defaults in `config/powerschool.php` and can be
