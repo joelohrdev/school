@@ -58,7 +58,11 @@ export type AssignmentRow = {
 
 export type Attendance = {
     total: number;
-    byCode: { code: string | null; description: string | null; count: number }[];
+    byCode: {
+        code: string | null;
+        description: string | null;
+        count: number;
+    }[];
     recent: { date: string; code: string | null; description: string | null }[];
 };
 
@@ -75,7 +79,12 @@ export type SyncRunRow = {
     error: string | null;
 };
 
-export type AlertType = 'missing' | 'late' | 'missing_resolved' | 'score_posted' | 'grade_drop';
+export type AlertType =
+    | 'missing'
+    | 'late'
+    | 'missing_resolved'
+    | 'score_posted'
+    | 'grade_drop';
 
 export type AlertRow = {
     id: number;

@@ -1,13 +1,13 @@
 {
-  "loginToPublicPortalResponse": {
-    "return": {
-      "userSessionVO": {
-        "serverInfo": {"apiVersion": "2.3.0"},
-        "serviceTicket": "FAKE-TICKET-1111",
-        "studentIDs": 1001,
-        "userId": "9001",
-        "userType": "1"
-      }
+    "loginToPublicPortalResponse": {
+        "return": {
+            "userSessionVO": {
+                "serverInfo": { "apiVersion": "2.3.0" },
+                "serviceTicket": "FAKE-TICKET-1111",
+                "studentIDs": 1001,
+                "userId": "9001",
+                "userType": "1"
+            }
+        }
     }
-  }
 }

@@ -10,7 +10,13 @@ import {
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import type { NavItem } from '@/types';
 
-export function NavMain({ items, label = 'Platform' }: { items: NavItem[]; label?: string }) {
+export function NavMain({
+    items,
+    label = 'Platform',
+}: {
+    items: NavItem[];
+    label?: string;
+}) {
     const { isCurrentUrl } = useCurrentUrl();
 
     return (
@@ -30,7 +36,11 @@ export function NavMain({ items, label = 'Platform' }: { items: NavItem[]; label
                             </Link>
                         </SidebarMenuButton>
                         {item.badge ? (
-                            <SidebarMenuBadge aria-label={`${item.badge} unread`}>{item.badge}</SidebarMenuBadge>
+                            <SidebarMenuBadge
+                                aria-label={`${item.badge} unread`}
+                            >
+                                {item.badge}
+                            </SidebarMenuBadge>
                         ) : null}
                     </SidebarMenuItem>
                 ))}

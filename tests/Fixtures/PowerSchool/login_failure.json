@@ -1,13 +1,17 @@
 {
-  "loginToPublicPortalResponse": {
-    "return": {
-      "messageVOs": {"description": "Invalid Username or Password!", "msgCode": "ERROR", "title": "Login"},
-      "userSessionVO": {
-        "serviceTicket": {"@nil": true},
-        "studentIDs": {"@nil": true},
-        "userId": {"@nil": true},
-        "userType": {"@nil": true}
-      }
+    "loginToPublicPortalResponse": {
+        "return": {
+            "messageVOs": {
+                "description": "Invalid Username or Password!",
+                "msgCode": "ERROR",
+                "title": "Login"
+            },
+            "userSessionVO": {
+                "serviceTicket": { "@nil": true },
+                "studentIDs": { "@nil": true },
+                "userId": { "@nil": true },
+                "userType": { "@nil": true }
+            }
+        }
     }
-  }
 }

@@ -27,7 +27,11 @@ export function AppSidebar() {
         { title: 'Sync', href: sync(), icon: RefreshCw },
     ];
 
-    const kidItems: NavItem[] = kids.map((k) => ({ title: k.name, href: student(k.id), icon: UserRound }));
+    const kidItems: NavItem[] = kids.map((k) => ({
+        title: k.name,
+        href: student(k.id),
+        icon: UserRound,
+    }));
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -45,7 +49,9 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} label="Overview" />
-                {kidItems.length > 0 && <NavMain items={kidItems} label="Kids" />}
+                {kidItems.length > 0 && (
+                    <NavMain items={kidItems} label="Kids" />
+                )}
             </SidebarContent>
 
             <SidebarFooter>

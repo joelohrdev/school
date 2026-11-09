@@ -12,7 +12,14 @@ const M = { top: 12, right: 12, bottom: 28, left: 40 };
  * crosshair snaps to the nearest day and a table view carries the same data.
  */
 export function GradeHistoryChart({ points }: { points: TrendPoint[] }) {
-    const data = useMemo(() => points.filter((p): p is { date: string; percent: number } => p.percent !== null), [points]);
+    const data = useMemo(
+        () =>
+            points.filter(
+                (p): p is { date: string; percent: number } =>
+                    p.percent !== null,
+            ),
+        [points],
+    );
     const wrap = useRef<HTMLDivElement>(null);
     const [width, setWidth] = useState(600);
     const [active, setActive] = useState<number | null>(null);
@@ -25,7 +32,9 @@ export function GradeHistoryChart({ points }: { points: TrendPoint[] }) {
             return;
         }
 
-        const ro = new ResizeObserver(([entry]) => setWidth(Math.max(240, entry.contentRect.width)));
+        const ro = new ResizeObserver(([entry]) =>
+            setWidth(Math.max(240, entry.contentRect.width)),
+        );
         ro.observe(el);
 
         return () => ro.disconnect();
@@ -46,15 +55,24 @@ export function GradeHistoryChart({ points }: { points: TrendPoint[] }) {
 
     const innerW = width - M.left - M.right;
     const innerH = HEIGHT - M.top - M.bottom;
-    const x = (i: number) => M.left + (data.length === 1 ? innerW / 2 : (i / (data.length - 1)) * innerW);
+    const x = (i: number) =>
+        M.left +
+        (data.length === 1 ? innerW / 2 : (i / (data.length - 1)) * innerW);
     const y = (v: number) => M.top + (1 - (v - lo) / (hi - lo)) * innerH;
-    const path = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(d.percent).toFixed(1)}`).join(' ');
-    const xLabels = [...new Set([0, Math.floor((data.length - 1) / 2), data.length - 1])];
+    const path = data
+        .map(
+            (d, i) =>
+                `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(d.percent).toFixed(1)}`,
+        )
+        .join(' ');
+    const xLabels = [
+        ...new Set([0, Math.floor((data.length - 1) / 2), data.length - 1]),
+    ];
 
     const onMove = (e: PointerEvent<SVGRectElement>) => {
         const box = e.currentTarget.getBoundingClientRect();
         const px = e.clientX - box.left;
-        const i = Math.round(((px) / box.width) * (data.length - 1));
+        const i = Math.round((px / box.width) * (data.length - 1));
         setActive(Math.min(data.length - 1, Math.max(0, i)));
     };
 
@@ -62,7 +80,12 @@ export function GradeHistoryChart({ points }: { points: TrendPoint[] }) {
         if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
             e.preventDefault();
             const step = e.key === 'ArrowLeft' ? -1 : 1;
-            setActive((a) => Math.min(data.length - 1, Math.max(0, (a ?? data.length - 1) + step)));
+            setActive((a) =>
+                Math.min(
+                    data.length - 1,
+                    Math.max(0, (a ?? data.length - 1) + step),
+                ),
+            );
         }
     };
 
@@ -83,8 +106,21 @@ export function GradeHistoryChart({ points }: { points: TrendPoint[] }) {
                 >
                     {ticks.map((t) => (
                         <g key={t}>
-                            <line x1={M.left} x2={width - M.right} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeWidth={1} />
-                            <text x={M.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="fill-muted-foreground text-[11px] tabular-nums">
+                            <line
+                                x1={M.left}
+                                x2={width - M.right}
+                                y1={y(t)}
+                                y2={y(t)}
+                                stroke="var(--border)"
+                                strokeWidth={1}
+                            />
+                            <text
+                                x={M.left - 8}
+                                y={y(t)}
+                                dy="0.32em"
+                                textAnchor="end"
+                                className="fill-muted-foreground text-[11px] tabular-nums"
+                            >
                                 {t}%
                             </text>
                         </g>
@@ -94,21 +130,56 @@ export function GradeHistoryChart({ points }: { points: TrendPoint[] }) {
                             key={i}
                             x={x(i)}
                             y={HEIGHT - 8}
-                            textAnchor={i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle'}
+                            textAnchor={
+                                i === 0
+                                    ? 'start'
+                                    : i === data.length - 1
+                                      ? 'end'
+                                      : 'middle'
+                            }
                             className="fill-muted-foreground text-[11px]"
                         >
                             {formatShortDay(data[i].date)}
                         </text>
                     ))}
-                    <path d={path} fill="none" stroke="var(--grade-line)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+                    <path
+                        d={path}
+                        fill="none"
+                        stroke="var(--grade-line)"
+                        strokeWidth={2}
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                    />
                     {point && active !== null && (
                         <>
-                            <line x1={x(active)} x2={x(active)} y1={M.top} y2={M.top + innerH} stroke="var(--muted-foreground)" strokeWidth={1} strokeDasharray="3 3" />
-                            <circle cx={x(active)} cy={y(point.percent)} r={4.5} fill="var(--grade-line)" stroke="var(--card)" strokeWidth={2} />
+                            <line
+                                x1={x(active)}
+                                x2={x(active)}
+                                y1={M.top}
+                                y2={M.top + innerH}
+                                stroke="var(--muted-foreground)"
+                                strokeWidth={1}
+                                strokeDasharray="3 3"
+                            />
+                            <circle
+                                cx={x(active)}
+                                cy={y(point.percent)}
+                                r={4.5}
+                                fill="var(--grade-line)"
+                                stroke="var(--card)"
+                                strokeWidth={2}
+                            />
                         </>
                     )}
                     {active === null && (
-                        <circle cx={x(data.length - 1)} cy={y(data[data.length - 1].percent)} r={4.5} fill="var(--grade-line)" stroke="var(--card)" strokeWidth={2} />
+                        <circle
+                            cx={x(data.length - 1)}
+                            cy={y(data[data.length - 1].percent)}
+                            r={4.5}
+                            fill="var(--grade-line)"
+                            stroke="var(--card)"
+                            strokeWidth={2}
+                        />
                     )}
                     <rect
                         x={M.left}
@@ -125,17 +196,30 @@ export function GradeHistoryChart({ points }: { points: TrendPoint[] }) {
                     <div
                         className="pointer-events-none absolute top-0 rounded-md border bg-popover px-2.5 py-1.5 text-xs shadow-sm"
                         style={{
-                            left: Math.min(Math.max(x(active) - 60, 0), width - 120),
+                            left: Math.min(
+                                Math.max(x(active) - 60, 0),
+                                width - 120,
+                            ),
                             width: 120,
                         }}
                         role="status"
                     >
-                        <div className="text-muted-foreground">{formatDay(point.date)}</div>
-                        <div className="text-sm font-semibold tabular-nums">{formatPercent(point.percent)}</div>
+                        <div className="text-muted-foreground">
+                            {formatDay(point.date)}
+                        </div>
+                        <div className="text-sm font-semibold tabular-nums">
+                            {formatPercent(point.percent)}
+                        </div>
                     </div>
                 )}
             </div>
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground" onClick={() => setShowTable((s) => !s)} aria-expanded={showTable}>
+            <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-muted-foreground"
+                onClick={() => setShowTable((s) => !s)}
+                aria-expanded={showTable}
+            >
                 {showTable ? 'Hide table' : 'Show as table'}
             </Button>
             {showTable && (
@@ -143,15 +227,23 @@ export function GradeHistoryChart({ points }: { points: TrendPoint[] }) {
                     <table className="w-full text-sm">
                         <thead className="sticky top-0 bg-muted text-left text-xs text-muted-foreground">
                             <tr>
-                                <th className="px-3 py-1.5 font-medium">Date</th>
-                                <th className="px-3 py-1.5 text-right font-medium">Grade</th>
+                                <th className="px-3 py-1.5 font-medium">
+                                    Date
+                                </th>
+                                <th className="px-3 py-1.5 text-right font-medium">
+                                    Grade
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
                             {[...data].reverse().map((d) => (
                                 <tr key={d.date} className="border-t">
-                                    <td className="px-3 py-1.5">{formatDay(d.date)}</td>
-                                    <td className="px-3 py-1.5 text-right tabular-nums">{formatPercent(d.percent)}</td>
+                                    <td className="px-3 py-1.5">
+                                        {formatDay(d.date)}
+                                    </td>
+                                    <td className="px-3 py-1.5 text-right tabular-nums">
+                                        {formatPercent(d.percent)}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>

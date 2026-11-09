@@ -1,12 +1,29 @@
 {
-  "getStudentDataResponse": {
-    "return": {
-      "studentDataVOs": {
-        "student": {"@type": "student", "id": 1001, "firstName": "Avery", "lastName": "Example", "middleName": {"@nil": true}},
-        "sections": {"@type": "section", "id": 401, "schoolCourseTitle": "Math 7", "roomName": {"@nil": true}},
-        "assignmentScores": {"@type": "assignmentScore", "id": 9101, "assignmentId": 7001, "missing": true, "score": {"@nil": true}},
-        "teachers": {"@nil": true}
-      }
+    "getStudentDataResponse": {
+        "return": {
+            "studentDataVOs": {
+                "student": {
+                    "@type": "student",
+                    "id": 1001,
+                    "firstName": "Avery",
+                    "lastName": "Example",
+                    "middleName": { "@nil": true }
+                },
+                "sections": {
+                    "@type": "section",
+                    "id": 401,
+                    "schoolCourseTitle": "Math 7",
+                    "roomName": { "@nil": true }
+                },
+                "assignmentScores": {
+                    "@type": "assignmentScore",
+                    "id": 9101,
+                    "assignmentId": 7001,
+                    "missing": true,
+                    "score": { "@nil": true }
+                },
+                "teachers": { "@nil": true }
+            }
+        }
     }
-  }
 }

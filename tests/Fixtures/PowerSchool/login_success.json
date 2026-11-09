@@ -1,16 +1,16 @@
 {
-  "loginToPublicPortalResponse": {
-    "return": {
-      "messageVOs": {"@nil": true},
-      "userSessionVO": {
-        "locale": {"@nil": true},
-        "serverCurrentTime": "2026-11-09T12:00:00.000Z",
-        "serverInfo": {"apiVersion": "2.3.0", "@type": "serverInfo"},
-        "serviceTicket": "FAKE-TICKET-0000",
-        "studentIDs": [1001, 1002],
-        "userId": 9001,
-        "userType": 1
-      }
+    "loginToPublicPortalResponse": {
+        "return": {
+            "messageVOs": { "@nil": true },
+            "userSessionVO": {
+                "locale": { "@nil": true },
+                "serverCurrentTime": "2026-11-09T12:00:00.000Z",
+                "serverInfo": { "apiVersion": "2.3.0", "@type": "serverInfo" },
+                "serviceTicket": "FAKE-TICKET-0000",
+                "studentIDs": [1001, 1002],
+                "userId": 9001,
+                "userType": 1
+            }
+        }
     }
-  }
 }
