@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Alert;
+use App\Models\Student;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -41,6 +43,10 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'unreadAlerts' => fn () => $request->user() ? Alert::unread()->count() : 0,
+            'kids' => fn () => $request->user()
+                ? Student::orderBy('first_name')->get(['id', 'first_name'])->map(fn (Student $s) => ['id' => $s->id, 'name' => $s->first_name])->all()
+                : [],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
