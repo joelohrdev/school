@@ -1,0 +1,49 @@
+{
+  "getStudentDataResponse": {
+    "return": {
+      "studentDataVOs": [
+        {
+          "student": {"@type": "student", "id": 1001, "dcid": 51001, "firstName": "Avery", "middleName": {"@nil": true}, "lastName": "Example", "gradeLevel": 7, "currentTerm": "S1", "currentGPA": {"@nil": true}},
+          "teachers": [
+            {"@type": "teacher", "id": 301, "firstName": "Pat", "lastName": "Teacher", "email": "pat.teacher@example.test", "schoolPhone": {"@nil": true}},
+            {"@type": "teacher", "id": 302, "firstName": "Sam", "lastName": "Instructor", "email": {"@nil": true}, "schoolPhone": "555-0100"}
+          ],
+          "sections": [
+            {"@type": "section", "id": 401, "dcid": 54401, "courseCode": "MATH7", "schoolCourseTitle": "Math 7", "sectionNum": "3", "expression": "2(A)", "periodSort": 2, "roomName": "112", "teacherID": 301, "termID": 3600, "schoolNumber": 10, "gradeBookType": 2},
+            {"@type": "section", "id": 402, "dcid": 54402, "courseCode": "SCI7", "schoolCourseTitle": "Science 7", "sectionNum": "1", "expression": "4(A)", "periodSort": 4, "roomName": "Lab B", "teacherID": 302, "termID": 3600, "schoolNumber": 10, "gradeBookType": 2}
+          ],
+          "assignmentCategories": [
+            {"@type": "assignmentCategory", "id": 11, "name": "Homework", "abbreviation": "HW", "description": {"@nil": true}, "gradeBookType": 2},
+            {"@type": "assignmentCategory", "id": 12, "name": "Tests", "abbreviation": "TST", "description": "Unit tests", "gradeBookType": 2}
+          ],
+          "assignments": [
+            {"@type": "assignment", "id": 7001, "assignmentid": 8001, "sectionid": 401, "sectionDcid": 54401, "categoryId": 11, "name": "Fractions worksheet", "abbreviation": "FW", "description": {"@nil": true}, "dueDate": "2026-11-03T00:00:00.000Z", "pointspossible": 10, "weight": 1, "includeinfinalgrades": 1, "publishscores": 1, "publishState": 1, "type": 1},
+            {"@type": "assignment", "id": 7002, "assignmentid": 8002, "sectionid": 402, "sectionDcid": 54402, "categoryId": 12, "name": "Cells unit test", "abbreviation": "CT", "description": "Chapter 4", "dueDate": "2026-11-05T00:00:00.000Z", "pointspossible": 50, "weight": 1, "includeinfinalgrades": 1, "publishscores": 1, "publishState": 1, "type": 1}
+          ],
+          "assignmentScores": [
+            {"@type": "assignmentScore", "id": 9101, "assignmentId": 7001, "score": {"@nil": true}, "percent": {"@nil": true}, "letterGrade": {"@nil": true}, "missing": true, "late": false, "exempt": false, "collected": false, "incomplete": false, "comment": {"@nil": true}, "scoretype": 0},
+            {"@type": "assignmentScore", "id": 9102, "assignmentId": 7002, "score": "42", "percent": 84, "letterGrade": "B", "missing": false, "late": true, "exempt": false, "collected": true, "incomplete": false, "comment": "Nice work", "scoretype": 0}
+          ],
+          "finalGrades": [
+            {"@type": "finalGrade", "id": 5001, "sectionid": 401, "reportingTermId": 77, "grade": "C", "percent": 74.5, "dateStored": "2026-11-08T00:00:00.000Z", "storeType": 1, "commentValue": {"@nil": true}},
+            {"@type": "finalGrade", "id": 5002, "sectionid": 402, "reportingTermId": 77, "grade": "B", "percent": 86, "dateStored": "2026-11-08T00:00:00.000Z", "storeType": 1, "commentValue": {"@nil": true}}
+          ],
+          "reportingTerms": [
+            {"@type": "reportingTerm", "id": 77, "termid": 3600, "abbreviation": "Q2", "title": "Quarter 2", "startDate": "2026-10-20T00:00:00.000Z", "endDate": "2026-12-19T00:00:00.000Z", "schoolid": 10, "yearid": 36, "sortOrder": 2, "sendingGrades": true, "suppressGrades": false, "suppressPercents": false}
+          ],
+          "notInSessionDays": [],
+          "attendance": [],
+          "terms": [],
+          "schools": [],
+          "periods": [],
+          "attendanceCodes": [],
+          "bulletins": []
+        },
+        {
+          "student": {"@type": "student", "id": 1002, "dcid": 51002, "firstName": "Blake", "middleName": "Q", "lastName": "Example", "gradeLevel": 4},
+          "teachers": [], "sections": [], "assignmentCategories": [], "assignments": [], "assignmentScores": [], "finalGrades": [], "reportingTerms": []
+        }
+      ]
+    }
+  }
+}

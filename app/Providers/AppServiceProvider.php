@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\PowerSchool\PowerSchoolClient;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(PowerSchoolClient::class, fn (): PowerSchoolClient => PowerSchoolClient::fromConfig());
         //
     }
 

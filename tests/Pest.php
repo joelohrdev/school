@@ -1,6 +1,9 @@
 <?php
 
+use App\Services\PowerSchool\UserSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /*
@@ -44,7 +47,37 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function powerschoolFixture(string $name): string
 {
-    // ..
+    return file_get_contents(__DIR__.'/Fixtures/PowerSchool/'.$name.'.json');
+}
+
+function fakePowerSchoolSession(): UserSession
+{
+    return new UserSession(
+        userId: 9001,
+        serviceTicket: 'FAKE-TICKET-0000',
+        userType: 1,
+        studentIds: [1001, 1002],
+        apiVersion: '2.3.0',
+    );
+}
+
+/**
+ * Fake the PowerSchool host as a digest-protected server: requests without an
+ * Authorization header get a 401 challenge, authorized ones get the response.
+ */
+function fakePowerSchool(string $fixtureOrBody): void
+{
+    $body = preg_match('/^[a-z_]+$/D', $fixtureOrBody) === 1 ? powerschoolFixture($fixtureOrBody) : $fixtureOrBody;
+
+    Http::fake(['ps.example.test/*' => function (Request $request) use ($body) {
+        if (! $request->hasHeader('Authorization')) {
+            return Http::response('', 401, [
+                'WWW-Authenticate' => 'Digest realm="PowerSchool", nonce="fakenonce", qop="auth", algorithm=MD5',
+            ]);
+        }
+
+        return Http::response($body);
+    }]);
 }
