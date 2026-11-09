@@ -2,11 +2,28 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property int $id
+ * @property int $section_id
+ * @property int|null $assignment_category_id
+ * @property int $ps_id
+ * @property int|null $ps_assignment_id
+ * @property string $name
+ * @property string|null $description
+ * @property CarbonImmutable|null $due_on
+ * @property string|null $points_possible
+ * @property string|null $weight
+ * @property bool $counts_in_final_grade
+ * @property bool $scores_published
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
+ */
 #[Fillable(['section_id', 'assignment_category_id', 'ps_id', 'ps_assignment_id', 'name', 'description', 'due_on', 'points_possible', 'weight', 'counts_in_final_grade', 'scores_published'])]
 class Assignment extends Model
 {

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Both alerts (missing, late, grade drop) and informational events
  * (missing resolved, score posted) live here, told apart by type.
+ *
+ * @property int $id
+ * @property int $student_id
+ * @property int|null $sync_run_id
+ * @property string $type
+ * @property array<string, mixed> $payload
+ * @property CarbonImmutable|null $read_at
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
  */
 #[Fillable(['student_id', 'sync_run_id', 'type', 'payload', 'read_at'])]
 class Alert extends Model
