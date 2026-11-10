@@ -1,8 +1,10 @@
 <?php
 
 use App\Mail\DailyDigest;
+use App\Mail\MissingWorkAlert;
 use App\Models\Alert;
 use App\Models\Student;
+use App\Services\Digest\DigestBuilder;
 use App\Services\Digest\DigestSender;
 use App\Services\PowerSchool\SyncService;
 use Carbon\CarbonImmutable;
@@ -87,7 +89,8 @@ it('lists newly missing, still missing with the oldest, and grade drops', functi
             && str_contains($html, 'Still missing:</strong> 2 assignments')
             && str_contains($html, 'Oldest is Fractions worksheet (Math 7), due Tue Nov 3, 7 days overdue')
             && str_contains($html, 'Math 7: 74.5% → 69.5%')
-            && ! str_contains($html, 'Blake');
+            // Every kid gets trends, even one with no news.
+            && str_contains($html, 'Blake');
     });
 });
 
@@ -98,11 +101,13 @@ it('sends the digest from the command only with --digest', function () {
         'course_name' => 'Math 7', 'assignment_name' => 'Worksheet', 'due_on' => '2026-11-03',
     ]]);
 
+    // Without --digest only the missing-work email goes out.
     $this->artisan('powerschool:sync')->assertSuccessful();
-    Mail::assertNothingSent();
+    Mail::assertNotSent(DailyDigest::class);
+    Mail::assertSent(MissingWorkAlert::class, 1);
 
     $this->artisan('powerschool:sync --digest')->expectsOutputToContain('Digest emailed.')->assertSuccessful();
-    Mail::assertSentCount(1);
+    Mail::assertSent(DailyDigest::class, 1);
 
     $this->artisan('powerschool:sync --digest')->expectsOutputToContain('No changes; no digest sent.')->assertSuccessful();
 });
@@ -133,3 +138,43 @@ it('lists new absences and teacher comments', function () {
             && str_contains($html, 'Redo question 4 for full credit');
     });
 });
+
+it('shows whether each kid is getting better or worse over the week', function () {
+    // A week of history: Avery starts at the fixture's grades with one missing.
+    fakePowerSchoolSync();
+    app(SyncService::class)->run();
+
+    // A week later: Math falls 5 points, Science's test goes missing.
+    $data = powerschoolFixtureData('student_data');
+    $kid = &$data['getStudentDataResponse']['return']['studentDataVOs'][0];
+    $kid['assignmentScores'][1]['missing'] = true;
+    $kid['finalGrades'][0]['percent'] = 69.5;
+    unset($kid);
+
+    $this->travel(7)->days();
+    fakePowerSchoolSync($data);
+    app(SyncService::class)->run();
+
+    expect(app(DigestSender::class)->send())->toBe(DigestSender::SENT);
+
+    Mail::assertSent(DailyDigest::class, function (DailyDigest $mail) {
+        $html = $mail->render();
+
+        return str_contains($html, 'Getting worse since Mon Nov 9:</strong> class average 77.8% (down 2.5 points), 2 missing (was 1)')
+            && str_contains($html, 'Since Mon Nov 9')
+            && str_contains($html, '−5.0')
+            && str_contains($html, 'Holding steady since Mon Nov 9:</strong> nothing missing.');
+    });
+});
+
+it('decides better, worse, mixed and steady', function (float $average, int $missing, string $verdict) {
+    expect(DigestBuilder::verdict($average, $missing))->toBe($verdict);
+})->with([
+    'grades up' => [1.5, 0, 'better'],
+    'fewer missing' => [0.2, -2, 'better'],
+    'both better' => [2.0, -1, 'better'],
+    'grades down' => [-1.0, 0, 'worse'],
+    'more missing' => [0.0, 1, 'worse'],
+    'one of each' => [3.0, 2, 'mixed'],
+    'small wobble' => [0.6, 0, 'steady'],
+]);

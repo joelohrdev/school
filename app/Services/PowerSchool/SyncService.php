@@ -13,6 +13,7 @@ use App\Models\RawPayload;
 use App\Models\ReportingTerm;
 use App\Models\Section;
 use App\Models\Student;
+use App\Models\StudentSnapshot;
 use App\Models\SyncRun;
 use App\Models\Teacher;
 use App\Models\Term;
@@ -302,6 +303,7 @@ class SyncService
         $this->syncAttendance($student, $vo['attendance'] ?? [], $vo['attendanceCodes'] ?? [], $run, $counts, $baseline);
 
         $this->snapshot($student, $run, $counts, $now, $baseline);
+        $this->studentSnapshot($student, $counts, $now);
 
         RawPayload::create(['student_id' => $student->id, 'sync_run_id' => $run->id, 'payload' => $vo]);
     }
@@ -431,6 +433,34 @@ class SyncService
 
             $counts->record('grade_snapshots', $snapshot);
         });
+    }
+
+    /**
+     * Today's headline numbers for the kid, for the morning email's trends.
+     * Runs after the class snapshots, so the average uses today's grades.
+     */
+    private function studentSnapshot(Student $student, SyncCounts $counts, CarbonImmutable $now): void
+    {
+        $today = $now->setTimezone((string) config('powerschool.timezone'))->toDateString();
+
+        $grades = GradeSnapshot::query()
+            ->where('student_id', $student->id)
+            ->whereDate('snapshot_on', $today)
+            ->whereNotNull('percent')
+            ->pluck('percent')
+            ->map(fn ($p) => (float) $p);
+
+        $snapshot = StudentSnapshot::query()->where('student_id', $student->id)->whereDate('snapshot_on', $today)->first()
+            ?? new StudentSnapshot(['student_id' => $student->id, 'snapshot_on' => $today]);
+
+        $snapshot->fill([
+            'missing_count' => AssignmentScore::missing()->where('student_id', $student->id)->count(),
+            'late_count' => AssignmentScore::late()->where('student_id', $student->id)->count(),
+            'average_percent' => $grades->isEmpty() ? null : round($grades->avg(), 2),
+            'graded_classes' => $grades->count(),
+        ])->save();
+
+        $counts->record('student_snapshots', $snapshot);
     }
 
     /**

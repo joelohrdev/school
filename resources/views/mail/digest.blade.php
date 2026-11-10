@@ -1,6 +1,13 @@
 @php
     $fmt = fn (?string $date) => $date ? \Carbon\CarbonImmutable::parse($date)->format('D M j') : 'no due date';
-    $pct = fn ($p) => $p === null ? '' : rtrim(rtrim(number_format((float) $p, 1), '0'), '.').'%';
+    $pct = fn ($p) => $p === null ? '—' : rtrim(rtrim(number_format((float) $p, 1), '0'), '.').'%';
+    $signed = fn (?float $n) => $n === null ? '—' : ($n > 0 ? '+'.number_format($n, 1) : ($n < 0 ? '−'.number_format(abs($n), 1) : 'no change'));
+    $verdicts = [
+        'better' => 'Getting better',
+        'worse' => 'Getting worse',
+        'mixed' => 'Mixed',
+        'steady' => 'Holding steady',
+    ];
 @endphp
 <x-mail::message>
 # School update
@@ -8,6 +15,39 @@
 @foreach ($students as $s)
 ## {{ $s['name'] }}
 
+@php
+    $since = null;
+@endphp
+@if ($s['trend'])
+@php
+    $t = $s['trend'];
+    $since = $t['since'] ? \Carbon\CarbonImmutable::parse($t['since'])->format('D M j') : null;
+    $parts = [];
+    if ($t['average'] !== null) {
+        $parts[] = 'class average '.$pct($t['average'])
+            .($since && $t['average_change'] !== null ? ' ('.($t['average_change'] == 0 ? 'no change' : ($t['average_change'] > 0 ? 'up ' : 'down ').number_format(abs($t['average_change']), 1).' points').')' : '');
+    }
+    $parts[] = ($t['missing'] === 0 ? 'nothing missing' : $t['missing'].' missing')
+        .($since && $t['missing_before'] !== null && $t['missing_before'] !== $t['missing'] ? ' (was '.$t['missing_before'].')' : '');
+    if ($t['late'] > 0 || ($t['late_before'] ?? 0) > 0) {
+        $parts[] = $t['late'].' late'
+            .($since && $t['late_before'] !== null && $t['late_before'] !== $t['late'] ? ' (was '.$t['late_before'].')' : '');
+    }
+    $summary = ($t['verdict'] && $since ? '**'.$verdicts[$t['verdict']].' since '.$since.':** ' : '**Right now:** ').implode(', ', $parts).'.';
+@endphp
+{!! $summary !!}
+
+@endif
+@if ($s['classes'])
+<x-mail::table>
+| Class | Grade | {{ $since ? 'Since '.$since : 'Change' }} |
+|:------|------:|------:|
+@foreach ($s['classes'] as $c)
+| {{ $c['course_name'] }} | {{ trim(($c['letter_grade'] ?? '').' '.$pct($c['percent'])) }} | {{ $signed($c['change']) }} |
+@endforeach
+</x-mail::table>
+
+@endif
 @if ($s['newly_missing'] || $s['newly_late'])
 **Newly missing or late**
 
@@ -35,7 +75,7 @@
 **Grade drops**
 
 @foreach ($s['grade_drops'] as $g)
-- {{ $g['course_name'] }}: {{ $pct($g['previous_percent']) }} → {{ $pct($g['percent']) }}@if ($g['letter_grade']) ({{ $g['letter_grade'] }})@endif
+- {{ $g['course_name'].': '.$pct($g['previous_percent']).' → '.$pct($g['percent']).($g['letter_grade'] ? ' ('.$g['letter_grade'].')' : '') }}
 @endforeach
 
 @endif
