@@ -1,4 +1,4 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { AssignmentList } from '@/components/grades/assignment-list';
 import { ClassList } from '@/components/grades/class-list';
@@ -15,7 +15,13 @@ import {
     SheetTitle,
 } from '@/components/notebook';
 import { Segmented, readQuery, writeQuery } from '@/components/segmented';
-import { daysBetween, formatShortDay, gradeOrdinal } from '@/lib/format';
+import {
+    daysBetween,
+    formatShortDay,
+    gradeOrdinal,
+    plural,
+} from '@/lib/format';
+import { show as showSection } from '@/routes/sections';
 import type {
     AssignmentRow,
     Attendance,
@@ -209,7 +215,8 @@ export default function StudentShow({
                                     ]}
                                 />
                             </Line>
-                            <AssignmentList
+                            <AssignmentsByClass
+                                classes={classes}
                                 assignments={groups[filter]}
                                 today={today}
                                 empty={empties[filter]}
@@ -224,6 +231,102 @@ export default function StudentShow({
                     )}
                 </Sheet>
             </Page>
+        </>
+    );
+}
+
+/**
+ * Assignments under a heading per class, in period order, each class's
+ * work in the order the filter sorted it. Classes with nothing to show
+ * are left out.
+ */
+function AssignmentsByClass({
+    classes,
+    assignments,
+    today,
+    empty,
+}: {
+    classes: ClassRow[];
+    assignments: AssignmentRow[];
+    today: string;
+    empty: string;
+}) {
+    if (assignments.length === 0) {
+        return <Blank>{empty}</Blank>;
+    }
+
+    const known = new Set(classes.map((c) => c.id));
+    const groups = [
+        ...classes.map((c) => ({
+            id: c.id,
+            course: c.course,
+            period: c.period,
+            rows: assignments.filter((a) => a.sectionId === c.id),
+        })),
+        // Work from a class no longer on the schedule still gets shown.
+        ...[
+            ...new Set(
+                assignments
+                    .filter((a) => !known.has(a.sectionId))
+                    .map((a) => a.sectionId),
+            ),
+        ].map((id) => {
+            const rows = assignments.filter((a) => a.sectionId === id);
+
+            return { id, course: rows[0].course, period: null, rows };
+        }),
+    ].filter((g) => g.rows.length > 0);
+
+    return (
+        <>
+            {groups.map((g) => {
+                const missing = g.rows.filter(
+                    (a) => assignmentStatus(a) === 'missing',
+                ).length;
+
+                return (
+                    <section key={g.id} aria-labelledby={`class-${g.id}`}>
+                        <LineHeading
+                            id={`class-${g.id}`}
+                            margin={
+                                g.period && (
+                                    <span
+                                        title={`Period ${g.period}`}
+                                        className="font-semibold text-foreground"
+                                    >
+                                        <span className="sr-only">Period </span>
+                                        {g.period.match(/^\d+/)?.[0] ??
+                                            g.period}
+                                    </span>
+                                )
+                            }
+                            aside={
+                                <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                                    {plural(g.rows.length, 'assignment')}
+                                    {missing > 0 && (
+                                        <span className="font-semibold text-missing">
+                                            , {missing} missing
+                                        </span>
+                                    )}
+                                </span>
+                            }
+                        >
+                            <Link
+                                href={showSection(g.id)}
+                                className="hover:underline hover:decoration-rule hover:decoration-2 hover:underline-offset-4"
+                            >
+                                {g.course}
+                            </Link>
+                        </LineHeading>
+                        <AssignmentList
+                            assignments={g.rows}
+                            today={today}
+                            showCourse={false}
+                            empty={empty}
+                        />
+                    </section>
+                );
+            })}
         </>
     );
 }
