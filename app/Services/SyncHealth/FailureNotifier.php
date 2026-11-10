@@ -4,6 +4,7 @@ namespace App\Services\SyncHealth;
 
 use App\Mail\SyncFailing;
 use App\Models\SyncRun;
+use App\Support\Recipients;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -25,9 +26,9 @@ class FailureNotifier
      */
     public function check(SyncRun $run): bool
     {
-        $to = config('powerschool.digest_to');
+        $to = Recipients::parents();
 
-        if ($run->dry_run || $run->status !== SyncRun::STATUS_FAILED || ! is_string($to) || $to === '') {
+        if ($run->dry_run || $run->status !== SyncRun::STATUS_FAILED || $to === []) {
             return false;
         }
 

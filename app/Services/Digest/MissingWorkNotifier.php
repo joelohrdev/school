@@ -7,6 +7,7 @@ use App\Models\Alert;
 use App\Models\AssignmentScore;
 use App\Models\Student;
 use App\Services\QuarterCalendar;
+use App\Support\Recipients;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -32,9 +33,9 @@ class MissingWorkNotifier
 
     public function send(): string
     {
-        $to = config('powerschool.digest_to');
+        $to = Recipients::parents();
 
-        if (! config('powerschool.missing_alert_emails', true) || ! is_string($to) || $to === '') {
+        if (! config('powerschool.missing_alert_emails', true) || $to === []) {
             return self::DISABLED;
         }
 

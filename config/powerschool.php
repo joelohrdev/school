@@ -51,7 +51,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | A class grade falling by at least this many percentage points since the
-    | last snapshot raises an alert. The digest goes to MAIL_TO_PARENT.
+    | last snapshot raises an alert. The digest goes to MAIL_TO_PARENT: one
+    | address, or several separated by commas.
     |
     */
 

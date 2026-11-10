@@ -4,6 +4,7 @@ namespace App\Services\Digest;
 
 use App\Mail\DailyDigest;
 use App\Models\Alert;
+use App\Support\Recipients;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -22,9 +23,9 @@ class DigestSender
 
     public function send(): string
     {
-        $to = config('powerschool.digest_to');
+        $to = Recipients::parents();
 
-        if (! is_string($to) || $to === '') {
+        if ($to === []) {
             return self::NO_RECIPIENT;
         }
 

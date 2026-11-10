@@ -79,7 +79,7 @@ Then edit `.env`:
 | `POWERSCHOOL_USERNAME` / `POWERSCHOOL_PASSWORD` | the parent portal login                                                              |
 | `POWERSCHOOL_TIMEZONE`                          | `America/Chicago`                                                                    |
 | `POWERSCHOOL_GRADE_DROP_THRESHOLD`              | points a class grade must fall to alert (default 3)                                  |
-| `MAIL_TO_PARENT`                                | where the digest and sync-failure emails go; leave blank to disable both             |
+| `MAIL_TO_PARENT`                                | where the emails go; several addresses separated by commas; blank disables them      |
 | `POWERSCHOOL_FAILURE_ALERT_AFTER`               | failed syncs in a row before the failure email (default 2)                           |
 | `POWERSCHOOL_MISSING_ALERT_EMAILS`              | email newly missing work right after a sync (default true)                           |
 | `BACKUP_DISKS`                                  | comma-separated disks for nightly backups (default `local`), see below               |

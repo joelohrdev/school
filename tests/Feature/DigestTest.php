@@ -252,3 +252,14 @@ it('compares missing work within the quarter only', function () {
 
     expect(StudentSnapshot::query()->whereDate('snapshot_on', '2026-11-10')->where('student_id', Student::query()->where('first_name', 'Avery')->value('id'))->value('quarter_missing_count'))->toBe(2);
 });
+
+it('sends to every address in MAIL_TO_PARENT', function () {
+    config(['powerschool.digest_to' => 'parent@example.test, other@example.test,,not-an-email']);
+    syncWithNews();
+
+    expect(app(DigestSender::class)->send())->toBe(DigestSender::SENT);
+
+    Mail::assertSent(DailyDigest::class, fn (DailyDigest $mail) => $mail->hasTo('parent@example.test')
+        && $mail->hasTo('other@example.test')
+        && count($mail->to) === 2);
+});
