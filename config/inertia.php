@@ -16,7 +16,9 @@ return [
     */
 
     'ssr' => [
-        'enabled' => (bool) env('INERTIA_SSR_ENABLED', true),
+        // Off by default: the app ships no SSR bundle and runs no SSR process.
+        // Set INERTIA_SSR_ENABLED=true only after adding both.
+        'enabled' => (bool) env('INERTIA_SSR_ENABLED', false),
         'url' => 'http://127.0.0.1:13714',
         // 'bundle' => base_path('bootstrap/ssr/ssr.mjs'),
 
