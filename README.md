@@ -44,6 +44,11 @@ Laravel 13, Inertia, React, TypeScript and Tailwind (React starter kit with Fort
 - If syncing fails twice in a row (`POWERSCHOOL_FAILURE_ALERT_AFTER`), `MAIL_TO_PARENT`
   gets one email saying so, with the error. Without it, a broken sync just looks like a
   quiet day. It emails again only after a sync has succeeded in between.
+- Kid and class pages are grouped by school quarter, opening on the current one, with a
+  "Whole year" option. Quarter dates come from PowerSchool's Q1–Q4 reporting terms
+  (`App\Services\QuarterCalendar`). Only if PowerSchool sends none do you enter them
+  under Settings → Quarters. A quarter's grade is the one PowerSchool filed for it,
+  matched by name or by dates within a week.
 - Each run is recorded in `sync_runs`. The raw PowerSchool payload is kept encrypted
   for 14 days for debugging, then pruned.
 

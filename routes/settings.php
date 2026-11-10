@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\QuarterController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +23,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('settings/password', [SecurityController::class, 'update'])
         ->middleware('throttle:6,1')
         ->name('user-password.update');
+
+    Route::get('settings/quarters', [QuarterController::class, 'edit'])->name('quarters.edit');
+    Route::put('settings/quarters', [QuarterController::class, 'update'])->name('quarters.update');
 
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
 });

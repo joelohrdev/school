@@ -4,6 +4,7 @@ import { AssignmentList } from '@/components/grades/assignment-list';
 import { ClassList } from '@/components/grades/class-list';
 import { DailyCountChart } from '@/components/grades/daily-count-chart';
 import { GradeHistoryChart } from '@/components/grades/grade-history-chart';
+import { QuarterPicker } from '@/components/grades/quarter-picker';
 import { CountBadge, assignmentStatus } from '@/components/grades/status-badge';
 import {
     Blank,
@@ -20,11 +21,13 @@ import type {
     Attendance,
     ClassRow,
     HistoryRow,
+    QuarterPicker as Quarters,
     StudentRef,
 } from '@/types/gradebook';
 
 type Props = {
     student: StudentRef;
+    quarters: Quarters;
     classes: ClassRow[];
     assignments: AssignmentRow[];
     attendance: Attendance;
@@ -42,6 +45,7 @@ const RECENT_DAYS = 14;
 
 export default function StudentShow({
     student,
+    quarters,
     classes,
     assignments,
     attendance,
@@ -98,8 +102,12 @@ export default function StudentShow({
         writeQuery('filter', f, 'all');
     };
 
+    const inYear = quarters.selected === 'year';
+
     const empties: Record<Filter, string> = {
-        all: 'No assignments yet.',
+        all: inYear
+            ? 'No assignments yet.'
+            : 'No assignments due this quarter.',
         missing: 'Nothing missing.',
         late: 'Nothing marked late.',
         upcoming: 'Nothing due in the next 7 days.',
@@ -133,6 +141,10 @@ export default function StudentShow({
                             </>
                         }
                     />
+
+                    <Line className="bg-muted/50 py-2.5">
+                        <QuarterPicker quarters={quarters} />
+                    </Line>
 
                     <Line>
                         <Segmented

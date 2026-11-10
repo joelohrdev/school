@@ -12,7 +12,9 @@ use App\Models\Student;
 use App\Models\StudentSnapshot;
 use App\Models\SyncRun;
 use App\Services\PowerSchool\CurrentGradeResolver;
+use App\Support\Quarter;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 
 /**
  * Shapes gradebook data into the props the Inertia pages render.
@@ -62,33 +64,38 @@ class Gradebook
     }
 
     /**
-     * Current grade and recent trend per class, in period order.
+     * Grade and trend per class, in period order: the current grade over the
+     * last month, or with a quarter, that quarter's grade and days.
      *
      * @return list<array<string, mixed>>
      */
-    public function classes(Student $student): array
+    public function classes(Student $student, ?Quarter $quarter = null): array
     {
-        $since = $this->today()->subDays(self::TREND_DAYS)->toDateString();
+        $since = $quarter === null ? $this->today()->subDays(self::TREND_DAYS)->toDateString() : $quarter->startsOn;
 
         return array_values($student->sections()
             ->with([
                 'teacher',
                 'finalGrades.reportingTerm',
-                'gradeSnapshots' => fn ($q) => $q->whereDate('snapshot_on', '>=', $since)->orderBy('snapshot_on'),
+                'gradeSnapshots' => fn ($q) => $q->whereDate('snapshot_on', '>=', $since)
+                    ->when($quarter, fn ($q) => $q->whereDate('snapshot_on', '<=', $quarter->endsOn))
+                    ->orderBy('snapshot_on'),
             ])
             ->orderByRaw('period_sort is null, period_sort')
             ->orderBy('course_name')
             ->get()
-            ->map(fn (Section $section) => $this->sectionRow($section))
+            ->map(fn (Section $section) => $this->sectionRow($section, $quarter))
             ->all());
     }
 
     /**
      * @return array<string, mixed>
      */
-    public function sectionRow(Section $section): array
+    public function sectionRow(Section $section, ?Quarter $quarter = null): array
     {
-        $current = $this->grades->pick($section->finalGrades, $this->today());
+        $current = $quarter === null
+            ? $this->grades->pick($section->finalGrades, $this->today())
+            : $this->quarterGrade($section->finalGrades, $quarter);
 
         return [
             'id' => $section->id,
@@ -101,10 +108,27 @@ class Gradebook
             'letter' => $current?->letter_grade,
             'term' => $current?->reportingTerm?->abbreviation,
             'trend' => $section->gradeSnapshots
+                ->when($quarter, fn ($c) => $c->filter(fn (GradeSnapshot $s) => $quarter->contains($s->snapshot_on)))
                 ->map(fn (GradeSnapshot $s) => ['date' => $s->snapshot_on->toDateString(), 'percent' => $s->percent === null ? null : (float) $s->percent])
                 ->values()
                 ->all(),
         ];
+    }
+
+    /**
+     * The grade PowerSchool filed for a quarter: the reporting term with the
+     * quarter's name, or failing that, its dates give or take a week. While
+     * the quarter is under way and nothing matches, the current grade.
+     *
+     * @param  Collection<int, FinalGrade>  $grades  with reportingTerm loaded
+     */
+    public function quarterGrade(Collection $grades, Quarter $quarter): ?FinalGrade
+    {
+        $graded = $grades->filter(fn (FinalGrade $g) => $g->percent !== null || $g->letter_grade !== null);
+
+        return $graded->first(fn (FinalGrade $g) => strcasecmp(trim((string) $g->reportingTerm?->abbreviation), $quarter->name) === 0)
+            ?? $graded->first(fn (FinalGrade $g) => $quarter->matches($g->reportingTerm?->starts_on, $g->reportingTerm?->ends_on))
+            ?? ($quarter->contains($this->today()) ? $this->grades->pick($grades, $this->today()) : null);
     }
 
     /**
@@ -138,11 +162,12 @@ class Gradebook
      *
      * @return list<array{date: string, average: float|null, missing: int, late: int}>
      */
-    public function history(Student $student, ?int $days = null): array
+    public function history(Student $student, ?int $days = null, ?Quarter $quarter = null): array
     {
         return array_values(StudentSnapshot::query()
             ->where('student_id', $student->id)
             ->when($days, fn ($q) => $q->whereDate('snapshot_on', '>=', $this->today()->subDays((int) $days)->toDateString()))
+            ->when($quarter, fn ($q) => $q->whereDate('snapshot_on', '>=', $quarter->startsOn)->whereDate('snapshot_on', '<=', $quarter->endsOn))
             ->orderBy('snapshot_on')
             ->get()
             ->map(fn (StudentSnapshot $s) => [
@@ -233,16 +258,18 @@ class Gradebook
     }
 
     /**
-     * Every assignment with its score, newest due date first.
+     * Every assignment with its score, newest due date first. With a
+     * quarter, only work due in it.
      *
      * @return list<array<string, mixed>>
      */
-    public function assignments(Student $student, ?Section $section = null): array
+    public function assignments(Student $student, ?Section $section = null, ?Quarter $quarter = null): array
     {
         $sectionIds = $section ? [$section->id] : $student->sections()->pluck('id')->all();
 
         return array_values(Assignment::query()
             ->whereIn('section_id', $sectionIds)
+            ->when($quarter, fn ($q) => $q->whereDate('due_on', '>=', $quarter->startsOn)->whereDate('due_on', '<=', $quarter->endsOn))
             ->with(['section', 'category', 'score'])
             ->orderByRaw('due_on is null, due_on desc')
             ->orderBy('name')
@@ -282,9 +309,13 @@ class Gradebook
     /**
      * @return array{total: int, byCode: list<array{code: string|null, description: string|null, count: int}>, recent: list<array{date: string, code: string|null, description: string|null}>}
      */
-    public function attendance(Student $student): array
+    public function attendance(Student $student, ?Quarter $quarter = null): array
     {
-        $marked = AttendanceRecord::marked()->where('student_id', $student->id)->orderByDesc('date')->get();
+        $marked = AttendanceRecord::marked()
+            ->where('student_id', $student->id)
+            ->when($quarter, fn ($q) => $q->whereDate('date', '>=', $quarter->startsOn)->whereDate('date', '<=', $quarter->endsOn))
+            ->orderByDesc('date')
+            ->get();
 
         return [
             'total' => $marked->count(),

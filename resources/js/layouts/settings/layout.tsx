@@ -5,11 +5,13 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit } from '@/routes/profile';
+import { edit as editQuarters } from '@/routes/quarters';
 import { edit as editSecurity } from '@/routes/security';
 
 const items = [
     { title: 'Profile', href: edit() },
     { title: 'Security', href: editSecurity() },
+    { title: 'Quarters', href: editQuarters() },
     { title: 'Appearance', href: editAppearance() },
 ];
 
@@ -21,7 +23,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
             <Sheet>
                 <SheetTitle
                     title="Settings"
-                    sub="Your account, password and theme."
+                    sub="Your account, password, school quarters and theme."
                 />
                 <Line>
                     <nav

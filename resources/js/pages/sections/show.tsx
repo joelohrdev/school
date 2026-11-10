@@ -5,6 +5,7 @@ import { AssignmentList } from '@/components/grades/assignment-list';
 import { CategoryBars } from '@/components/grades/category-bars';
 import { GradeHistoryChart } from '@/components/grades/grade-history-chart';
 import { GradeValue } from '@/components/grades/grade-value';
+import { QuarterPicker } from '@/components/grades/quarter-picker';
 import {
     Line,
     LineHeading,
@@ -18,6 +19,7 @@ import { show as showStudent } from '@/routes/students';
 import type {
     AssignmentRow,
     ClassRow,
+    QuarterPicker as Quarters,
     ReportCardRow,
     StudentRef,
     TrendPoint,
@@ -25,6 +27,7 @@ import type {
 
 type Props = {
     student: StudentRef;
+    quarters: Quarters;
     section: ClassRow & { history: TrendPoint[] };
     reportCard: ReportCardRow[];
     assignments: AssignmentRow[];
@@ -33,6 +36,7 @@ type Props = {
 
 export default function SectionShow({
     student,
+    quarters,
     section,
     reportCard,
     assignments,
@@ -47,7 +51,9 @@ export default function SectionShow({
             ].sort(),
         [assignments],
     );
-    const [category, setCategory] = useState('all');
+    const [picked, setCategory] = useState('all');
+    // A quarter without the picked category falls back to all of them.
+    const category = categories.includes(picked) ? picked : 'all';
 
     const visible =
         category === 'all'
@@ -117,6 +123,10 @@ export default function SectionShow({
                             />
                         }
                     />
+
+                    <Line className="bg-muted/50 py-2.5">
+                        <QuarterPicker quarters={quarters} />
+                    </Line>
 
                     <section aria-labelledby="grade-history">
                         <LineHeading id="grade-history">
@@ -234,7 +244,11 @@ export default function SectionShow({
                             assignments={visible}
                             today={today}
                             showCourse={false}
-                            empty="No assignments in this class yet."
+                            empty={
+                                quarters.selected === 'year'
+                                    ? 'No assignments in this class yet.'
+                                    : 'No assignments due in this class this quarter.'
+                            }
                         />
                     </section>
                 </Sheet>

@@ -151,3 +151,16 @@ export type Paginated<T> = {
     prev_page_url: string | null;
     next_page_url: string | null;
 };
+
+export type QuarterOption = {
+    key: string;
+    name: string;
+    startsOn: string;
+    endsOn: string;
+};
+
+export type QuarterPicker = {
+    options: QuarterOption[];
+    /** A quarter's key, or "year" for the whole year. */
+    selected: string;
+};
