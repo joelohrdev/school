@@ -43,6 +43,13 @@ export type ReportCardRow = {
     current: boolean;
 };
 
+export type HistoryRow = {
+    date: string;
+    average: number | null;
+    missing: number;
+    late: number;
+};
+
 export type StudentRef = {
     id: number;
     name: string;
@@ -55,6 +62,7 @@ export type StudentSummary = StudentRef & {
     lateCount: number;
     missing: MissingItem[];
     upcoming: UpcomingItem[];
+    averageTrend: TrendPoint[];
     classes: ClassRow[];
 };
 

@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { ClassList } from '@/components/grades/class-list';
+import { Sparkline } from '@/components/grades/sparkline';
 import { CountBadge } from '@/components/grades/status-badge';
 import { LastSync } from '@/components/last-sync';
 import {
@@ -12,6 +13,7 @@ import {
 import { SyncNowButton } from '@/components/sync-now-button';
 import {
     formatLongDay,
+    formatPercent,
     formatShortDay,
     gradeOrdinal,
     plural,
@@ -19,7 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { show as showSection } from '@/routes/sections';
 import { show as showStudent } from '@/routes/students';
-import type { StudentSummary, SyncRunRow } from '@/types/gradebook';
+import type { StudentSummary, SyncRunRow, TrendPoint } from '@/types/gradebook';
 
 type Props = {
     students: StudentSummary[];
@@ -108,6 +110,8 @@ function StudentSheet({ student }: { student: StudentSummary }) {
                     )
                 }
             />
+
+            <AverageLine trend={student.averageTrend} />
 
             {student.missing.length > 0 && (
                 <section aria-labelledby={`missing-${student.id}`}>
@@ -250,4 +254,43 @@ function dueIn(days: number): string {
     }
 
     return days === 1 ? 'Due tomorrow' : `In ${days} days`;
+}
+
+/** The kid's class average now, its 30-day line, and how far it moved. */
+function AverageLine({ trend }: { trend: TrendPoint[] }) {
+    const values = trend.filter(
+        (t): t is { date: string; percent: number } => t.percent !== null,
+    );
+
+    if (values.length === 0) {
+        return null;
+    }
+
+    const now = values[values.length - 1];
+    const change =
+        values.length > 1
+            ? Math.round((now.percent - values[0].percent) * 10) / 10
+            : null;
+
+    return (
+        <Line className="py-2.5">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span className="text-sm">
+                    Class average{' '}
+                    <span className="font-semibold tabular-nums">
+                        {formatPercent(now.percent)}
+                    </span>
+                </span>
+                <Sparkline points={trend} />
+                {change !== null && (
+                    <span className="text-xs text-muted-foreground">
+                        {change === 0
+                            ? 'No change'
+                            : `${change > 0 ? 'Up' : 'Down'} ${Math.abs(change).toFixed(1)} points`}{' '}
+                        since {formatShortDay(values[0].date)}
+                    </span>
+                )}
+            </div>
+        </Line>
+    );
 }

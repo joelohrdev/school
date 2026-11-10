@@ -16,6 +16,7 @@ class StudentController extends Controller
             'classes' => $gradebook->classes($student),
             'assignments' => $gradebook->assignments($student),
             'attendance' => $gradebook->attendance($student),
+            'history' => $gradebook->history($student),
             'today' => $gradebook->today()->toDateString(),
         ]);
     }

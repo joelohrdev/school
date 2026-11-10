@@ -2,6 +2,8 @@ import { Head, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { AssignmentList } from '@/components/grades/assignment-list';
 import { ClassList } from '@/components/grades/class-list';
+import { DailyCountChart } from '@/components/grades/daily-count-chart';
+import { GradeHistoryChart } from '@/components/grades/grade-history-chart';
 import { CountBadge, assignmentStatus } from '@/components/grades/status-badge';
 import {
     Blank,
@@ -17,6 +19,7 @@ import type {
     AssignmentRow,
     Attendance,
     ClassRow,
+    HistoryRow,
     StudentRef,
 } from '@/types/gradebook';
 
@@ -25,10 +28,11 @@ type Props = {
     classes: ClassRow[];
     assignments: AssignmentRow[];
     attendance: Attendance;
+    history: HistoryRow[];
     today: string;
 };
 
-const TABS = ['classes', 'assignments', 'attendance'] as const;
+const TABS = ['classes', 'assignments', 'trends', 'attendance'] as const;
 type Tab = (typeof TABS)[number];
 
 const FILTERS = ['all', 'missing', 'late', 'upcoming', 'recent'] as const;
@@ -41,6 +45,7 @@ export default function StudentShow({
     classes,
     assignments,
     attendance,
+    history,
     today,
 }: Props) {
     const { url } = usePage();
@@ -145,6 +150,7 @@ export default function StudentShow({
                                     label: 'Assignments',
                                     count: assignments.length,
                                 },
+                                { value: 'trends', label: 'Trends' },
                                 { value: 'attendance', label: 'Attendance' },
                             ]}
                         />
@@ -199,11 +205,55 @@ export default function StudentShow({
                         </>
                     )}
 
+                    {tab === 'trends' && <Trends history={history} />}
+
                     {tab === 'attendance' && (
                         <AttendanceSummary attendance={attendance} />
                     )}
                 </Sheet>
             </Page>
+        </>
+    );
+}
+
+function Trends({ history }: { history: HistoryRow[] }) {
+    return (
+        <>
+            <section aria-labelledby="trend-average">
+                <LineHeading id="trend-average">Class average</LineHeading>
+                <Line ruled={false} className="py-4">
+                    <p className="mb-3 text-sm text-muted-foreground">
+                        The average of current class grades, each day a sync
+                        ran.
+                    </p>
+                    <GradeHistoryChart
+                        points={history.map((h) => ({
+                            date: h.date,
+                            percent: h.average,
+                        }))}
+                        label="Average"
+                        title="Class average"
+                    />
+                </Line>
+            </section>
+            <section aria-labelledby="trend-missing">
+                <LineHeading id="trend-missing">
+                    Missing assignments
+                </LineHeading>
+                <Line ruled={false} className="py-4">
+                    <p className="mb-3 text-sm text-muted-foreground">
+                        How many assignments were marked missing each day.
+                    </p>
+                    <DailyCountChart
+                        points={history.map((h) => ({
+                            date: h.date,
+                            value: h.missing,
+                        }))}
+                        label="Missing"
+                        title="Missing assignments per day"
+                    />
+                </Line>
+            </section>
         </>
     );
 }

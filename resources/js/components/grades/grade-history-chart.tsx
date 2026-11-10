@@ -8,10 +8,21 @@ const HEIGHT = 220;
 const M = { top: 12, right: 12, bottom: 28, left: 40 };
 
 /**
- * Daily class grade over time. One series, one hue, no legend box; a
- * crosshair snaps to the nearest day and a table view carries the same data.
+ * A daily percent over time: a class grade, or a kid's class average. One
+ * series, one hue, no legend box; a crosshair snaps to the nearest day and a
+ * table view carries the same data.
  */
-export function GradeHistoryChart({ points }: { points: TrendPoint[] }) {
+export function GradeHistoryChart({
+    points,
+    label = 'Grade',
+    title = 'Grade history',
+}: {
+    points: TrendPoint[];
+    /** Column name in the table view. */
+    label?: string;
+    /** What the chart shows, for screen readers. */
+    title?: string;
+}) {
     const data = useMemo(
         () =>
             points.filter(
@@ -99,7 +110,7 @@ export function GradeHistoryChart({ points }: { points: TrendPoint[] }) {
                     height={HEIGHT}
                     className="block max-w-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     role="img"
-                    aria-label={`Grade history from ${formatDay(data[0].date)} to ${formatDay(data[data.length - 1].date)}. Use the arrow keys to step through days.`}
+                    aria-label={`${title} from ${formatDay(data[0].date)} to ${formatDay(data[data.length - 1].date)}. Use the arrow keys to step through days.`}
                     tabIndex={0}
                     onKeyDown={onKey}
                     onBlur={() => setActive(null)}
@@ -231,7 +242,7 @@ export function GradeHistoryChart({ points }: { points: TrendPoint[] }) {
                                     Date
                                 </th>
                                 <th className="px-3 py-1.5 text-right font-medium">
-                                    Grade
+                                    {label}
                                 </th>
                             </tr>
                         </thead>

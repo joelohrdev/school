@@ -53,6 +53,7 @@ it('shows one card per kid with missing work and current grades', function () {
         ->where('students.0.classes.0.course', 'Math 7')
         ->where('students.0.classes.0.percent', 74.5)
         ->where('students.0.classes.0.letter', 'C')
+        ->where('students.0.averageTrend.0.percent', 80.25)
         ->has('students.0.classes.0.trend', 1)
         ->where('lastSync.status', SyncRun::STATUS_SUCCEEDED)
         ->where('today', '2026-11-09')
@@ -91,7 +92,11 @@ it('shows a kid with classes, assignments and attendance', function () {
         ->where('assignments.0.name', 'Cells unit test')
         ->where('assignments.0.late', true)
         ->where('attendance.total', 2)
-        ->where('attendance.byCode.0.count', 1));
+        ->where('attendance.byCode.0.count', 1)
+        ->has('history', 1)
+        ->where('history.0.date', '2026-11-09')
+        ->where('history.0.missing', 1)
+        ->where('history.0.average', 80.25));
 });
 
 it('shows a class with its history and assignments', function () {

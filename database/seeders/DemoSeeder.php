@@ -12,6 +12,7 @@ use App\Models\GradeSnapshot;
 use App\Models\ReportingTerm;
 use App\Models\Section;
 use App\Models\Student;
+use App\Models\StudentSnapshot;
 use App\Models\SyncRun;
 use App\Models\Teacher;
 use App\Models\User;
@@ -151,6 +152,21 @@ class DemoSeeder extends Seeder
             foreach ([[12, 'AE', 'Absent Excused'], [5, 'T', 'Tardy']] as $i => [$ago, $code, $desc]) {
                 AttendanceRecord::create(['student_id' => $student->id, 'ps_id' => ++$ids, 'date' => $today->subDays($ago + $k), 'code' => $code, 'description' => $desc]);
             }
+        }
+
+        // Daily headline numbers for the trend charts: the average of that day's
+        // class snapshots, and missing work creeping up for Avery.
+        foreach (Student::all() as $k => $student) {
+            GradeSnapshot::where('student_id', $student->id)->get()->groupBy(fn ($g) => $g->snapshot_on->toDateString())
+                ->each(function ($day, string $date) use ($student, $k, $today) {
+                    $ago = (int) CarbonImmutable::parse($date)->diffInDays($today);
+                    StudentSnapshot::create([
+                        'student_id' => $student->id, 'snapshot_on' => $date,
+                        'average_percent' => round($day->avg('percent'), 2), 'graded_classes' => $day->count(),
+                        'missing_count' => $k === 0 ? max(0, 3 - intdiv($ago, 9)) : ($ago > 18 ? 2 : 1),
+                        'late_count' => $k === 0 && $ago < 20 ? 1 : 0,
+                    ]);
+                });
         }
 
         $avery = Student::where('first_name', 'Avery')->sole();

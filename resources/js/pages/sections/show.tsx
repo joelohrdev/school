@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Mail } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { AssignmentList } from '@/components/grades/assignment-list';
+import { CategoryBars } from '@/components/grades/category-bars';
 import { GradeHistoryChart } from '@/components/grades/grade-history-chart';
 import { GradeValue } from '@/components/grades/grade-value';
 import {
@@ -123,6 +124,15 @@ export default function SectionShow({
                         </LineHeading>
                         <Line ruled={false} className="py-4">
                             <GradeHistoryChart points={section.history} />
+                        </Line>
+                    </section>
+
+                    <section aria-labelledby="by-category">
+                        <LineHeading id="by-category">
+                            Average by category
+                        </LineHeading>
+                        <Line ruled={false} className="py-4">
+                            <CategoryBars assignments={assignments} />
                         </Line>
                     </section>
 

@@ -9,6 +9,7 @@ use App\Models\FinalGrade;
 use App\Models\GradeSnapshot;
 use App\Models\Section;
 use App\Models\Student;
+use App\Models\StudentSnapshot;
 use App\Models\SyncRun;
 use App\Services\PowerSchool\CurrentGradeResolver;
 use Carbon\CarbonImmutable;
@@ -55,6 +56,7 @@ class Gradebook
             'lateCount' => AssignmentScore::late()->where('student_id', $student->id)->count(),
             'missing' => $missing,
             'upcoming' => $this->upcoming($student),
+            'averageTrend' => $this->averageTrend($student),
             'classes' => $this->classes($student),
         ];
     }
@@ -128,6 +130,42 @@ class Gradebook
                 'daysOverdue' => $s->assignment->due_on === null ? null : max(0, self::calendarDays($s->assignment->due_on, $today)),
             ])
             ->all());
+    }
+
+    /**
+     * The kid's daily headline numbers, oldest first: class average, missing
+     * and late counts. One row per day a sync ran.
+     *
+     * @return list<array{date: string, average: float|null, missing: int, late: int}>
+     */
+    public function history(Student $student, ?int $days = null): array
+    {
+        return array_values(StudentSnapshot::query()
+            ->where('student_id', $student->id)
+            ->when($days, fn ($q) => $q->whereDate('snapshot_on', '>=', $this->today()->subDays((int) $days)->toDateString()))
+            ->orderBy('snapshot_on')
+            ->get()
+            ->map(fn (StudentSnapshot $s) => [
+                'date' => $s->snapshot_on->toDateString(),
+                'average' => $s->average_percent === null ? null : (float) $s->average_percent,
+                'missing' => $s->missing_count,
+                'late' => $s->late_count,
+            ])
+            ->all());
+    }
+
+    /**
+     * The class average over the trend window, shaped like a class's trend
+     * so the same sparkline draws it.
+     *
+     * @return list<array{date: string, percent: float|null}>
+     */
+    public function averageTrend(Student $student): array
+    {
+        return array_map(
+            fn (array $row) => ['date' => $row['date'], 'percent' => $row['average']],
+            $this->history($student, self::TREND_DAYS),
+        );
     }
 
     /**
