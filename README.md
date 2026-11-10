@@ -125,13 +125,94 @@ PowerSchool's `notInSessionDays` when no kid has school.
 php artisan schedule:work
 ```
 
-**Forge / Ploi:** add the standard Laravel cron for the site user, and a queue worker
-daemon (`php artisan queue:work --tries=1 --timeout=300`). Forge and Ploi both have a
-scheduler toggle that adds the cron:
+**Forge / Ploi:** turn on the site's scheduler and add a queue worker. See
+[Going live on Forge](#going-live-on-forge).
+
+## Going live on Forge
+
+The app runs on MySQL (or SQLite) behind Forge's nginx. In order:
+
+**1. Create the site**
+
+- Source control: the GitHub account that owns the repo, branch `main`.
+- **Connect to database:** on. Create a database (for example `kids_tracker`); Forge
+  fills in the `DB_*` settings.
+- Advanced settings: web directory `/public`, **PHP 8.5** (the locked packages need at
+  least 8.4), build command `npm run build`. Zero-downtime deployments with `storage`
+  as a shared path is fine.
+- Use your own domain, or keep the `.on-forge.com` one. Either way, add a Let's Encrypt
+  certificate under SSL before signing in.
+
+The first automatic deploy may fail because `.env` isn't filled in yet. That's expected.
+
+**2. Environment.** Edit the site's `.env` in Forge. Keep the `DB_*` values Forge set
+and the generated `APP_KEY`, then set:
 
 ```
-* * * * * cd /home/forge/school && php artisan schedule:run >> /dev/null 2>&1
+APP_NAME="Kids Tracker"
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://your-domain
+
+SESSION_SECURE_COOKIE=true
+
+POWERSCHOOL_BASE_URL=https://d118-powerschool.info
+POWERSCHOOL_USERNAME=...
+POWERSCHOOL_PASSWORD=...
+POWERSCHOOL_TIMEZONE=America/Chicago
+
+MAIL_MAILER=...          # postmark, resend, ses or smtp, plus that provider's keys
+MAIL_FROM_ADDRESS=...
+MAIL_FROM_NAME="Kids Tracker"
+MAIL_TO_PARENT=you@...
+
+BACKUP_DISKS=local       # local,s3 once AWS_* is set
 ```
+
+Leave `REGISTRATION_OPEN` unset so registration stays closed. **Save `APP_KEY` in a
+password manager**: backups can't be decrypted without it.
+
+**3. Deploy script.** Keep Forge's release steps and make sure the script runs:
+
+```bash
+$FORGE_COMPOSER install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+npm ci
+npm run build
+$FORGE_PHP artisan migrate --force
+$FORGE_PHP artisan optimize
+$FORGE_PHP artisan queue:restart
+```
+
+The build needs PHP, because it generates the route helpers with artisan. Then click
+**Deploy**.
+
+**4. Background processes**
+
+- **Scheduler:** turn it on for the site. It runs the 06:30 and 15:45 syncs, the 02:30
+  backup and the 03:00 cleanup.
+- **Queue worker:** add a daemon running `php artisan queue:work --tries=1 --timeout=300`
+  as `forge` in the site's directory. Without it, Sync now does nothing.
+
+**5. Create the account and sync.** SSH in as `forge`, `cd` into the site, and run:
+
+```bash
+php artisan user:create
+php artisan powerschool:sync --dry-run
+php artisan powerschool:sync
+```
+
+The first real sync is the baseline: no alerts, no email. Sign in and turn on two-factor
+sign-in under Settings, Security.
+
+**6. Check it**
+
+- The dashboard shows each kid; Sync now finishes on the Sync page.
+- Mail works: request a password reset from the sign-in page and confirm it arrives.
+- `php artisan backup:database` saves a `.sql.gz.enc` file.
+- The next weekday morning, the digest arrives if anything changed.
+
+**Later:** add S3-compatible storage (`AWS_*`) and set `BACKUP_DISKS=local,s3`, so
+backups survive losing the server.
 
 ## Backups
 
