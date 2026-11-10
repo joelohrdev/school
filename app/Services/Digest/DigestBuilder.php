@@ -8,11 +8,15 @@ use App\Models\GradeSnapshot;
 use App\Models\Student;
 use App\Models\StudentSnapshot;
 use App\Presenters\Gradebook;
+use App\Services\QuarterCalendar;
+use App\Support\Quarter;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /**
- * Gathers everything not yet emailed into one digest, grouped by kid.
+ * Gathers everything not yet emailed into one digest, grouped by kid, about
+ * the current quarter only. News about work from an earlier quarter (a Q1
+ * assignment finally graded, say) is left out but still marked handled.
  */
 class DigestBuilder
 {
@@ -22,23 +26,35 @@ class DigestBuilder
     /** A class average must move this many points to count as better or worse. */
     public const AVERAGE_STEP = 1.0;
 
-    public function __construct(private readonly Gradebook $gradebook) {}
+    public function __construct(
+        private readonly Gradebook $gradebook,
+        private readonly QuarterCalendar $quarters,
+    ) {}
 
     /**
-     * @return array{alert_ids: list<int>, students: list<array<string, mixed>>, totals: array<string, int>}
+     * alert_ids is everything to mark handled; shown is how many of those
+     * fall in the current quarter and make it into the email.
+     *
+     * @return array{alert_ids: list<int>, shown: int, students: list<array<string, mixed>>, totals: array<string, int>}
      */
     public function build(): array
     {
         $today = CarbonImmutable::now((string) config('powerschool.timezone'))->startOfDay();
         $alerts = Alert::unnotified()->orderBy('id')->get()->groupBy('student_id');
 
-        $students = Student::orderBy('first_name')->get()->map(function (Student $student) use ($alerts, $today) {
+        $shown = collect();
+
+        $students = Student::orderBy('first_name')->get()->map(function (Student $student) use ($alerts, $today, &$shown) {
+            $quarter = $this->quarters->current($this->quarters->all($student), $today);
+
             /** @var Collection<int, Alert> $mine */
-            $mine = $alerts->get($student->id, collect());
+            $mine = $alerts->get($student->id, collect())->filter(fn (Alert $a) => self::inQuarter($a, $quarter))->values();
+            $shown = $shown->merge($mine);
             $of = fn (string $type) => $mine->where('type', $type)->map(fn (Alert $a) => $a->payload)->values()->all();
 
             $missing = AssignmentScore::missing()
                 ->where('student_id', $student->id)
+                ->dueIn($quarter)
                 ->with('assignment.section')
                 ->get()
                 ->sortBy(fn (AssignmentScore $s) => $s->assignment->due_on?->getTimestamp() ?? PHP_INT_MAX)
@@ -48,6 +64,7 @@ class DigestBuilder
 
             return [
                 'name' => $student->first_name,
+                'quarter' => $quarter?->toArray(),
                 'newly_missing' => $of(Alert::TYPE_MISSING),
                 'newly_late' => $of(Alert::TYPE_LATE),
                 'resolved' => $of(Alert::TYPE_MISSING_RESOLVED),
@@ -63,14 +80,15 @@ class DigestBuilder
                     'days_overdue' => $oldest->assignment->due_on === null ? null : max(0, (int) $oldest->assignment->due_on->diffInDays($today)),
                 ],
                 'has_news' => $mine->isNotEmpty(),
-                ...$this->trend($student, $today),
+                ...$this->trend($student, $today, $quarter),
             ];
         })->all();
 
-        $all = $alerts->flatten();
+        $all = $shown;
 
         return [
-            'alert_ids' => array_values($all->map(fn (Alert $a): int => $a->id)->all()),
+            'alert_ids' => array_values($alerts->flatten()->map(fn (Alert $a): int => $a->id)->all()),
+            'shown' => $shown->count(),
             'students' => array_values($students),
             'totals' => [
                 'newly_missing' => $all->where('type', Alert::TYPE_MISSING)->count(),
@@ -85,23 +103,46 @@ class DigestBuilder
     }
 
     /**
+     * Whether an alert is about the current quarter: work due in it, an
+     * absence on a day in it, or a grade drop measured within it. Without
+     * quarters, everything counts.
+     */
+    private static function inQuarter(Alert $alert, ?Quarter $quarter): bool
+    {
+        if ($quarter === null) {
+            return true;
+        }
+
+        $p = $alert->payload ?? [];
+
+        return match ($alert->type) {
+            Alert::TYPE_ABSENCE => $quarter->contains($p['date'] ?? null),
+            Alert::TYPE_GRADE_DROP => $quarter->contains($p['previous_on'] ?? null),
+            default => $quarter->contains($p['due_on'] ?? null),
+        };
+    }
+
+    /**
      * Today's numbers against the latest day at least a week back (or the
-     * earliest day recorded, while there's less than a week of history).
+     * earliest day recorded, while there's less than a week of history),
+     * never reaching back before the quarter started.
      *
      * @return array{trend: array<string, mixed>|null, classes: list<array<string, mixed>>}
      */
-    private function trend(Student $student, CarbonImmutable $today): array
+    private function trend(Student $student, CarbonImmutable $today, ?Quarter $quarter): array
     {
-        $now = StudentSnapshot::query()->where('student_id', $student->id)->latest('snapshot_on')->first();
+        $snapshots = fn () => StudentSnapshot::query()
+            ->where('student_id', $student->id)
+            ->when($quarter, fn ($q) => $q->whereDate('snapshot_on', '>=', $quarter->startsOn)->whereDate('snapshot_on', '<=', $quarter->endsOn));
+
+        $now = $snapshots()->latest('snapshot_on')->first();
 
         $before = $now === null ? null : (
-            StudentSnapshot::query()
-                ->where('student_id', $student->id)
+            $snapshots()
                 ->whereDate('snapshot_on', '<=', $today->subDays(self::TREND_DAYS)->toDateString())
                 ->latest('snapshot_on')
                 ->first()
-            ?? StudentSnapshot::query()
-                ->where('student_id', $student->id)
+            ?? $snapshots()
                 ->whereDate('snapshot_on', '<', $now->snapshot_on->toDateString())
                 ->oldest('snapshot_on')
                 ->first()
@@ -109,10 +150,11 @@ class DigestBuilder
 
         $since = $before?->snapshot_on;
 
-        $classes = array_values(collect($this->gradebook->classes($student))
-            ->map(function (array $c) use ($since) {
+        $classes = array_values(collect($this->gradebook->classes($student, $quarter))
+            ->map(function (array $c) use ($since, $quarter) {
                 $then = $since === null ? null : GradeSnapshot::query()
                     ->where('section_id', $c['id'])
+                    ->when($quarter, fn ($q) => $q->whereDate('snapshot_on', '>=', $quarter->startsOn))
                     ->whereDate('snapshot_on', '<=', $since->toDateString())
                     ->whereNotNull('percent')
                     ->latest('snapshot_on')
@@ -135,18 +177,29 @@ class DigestBuilder
         $average = $now->average_percent === null ? null : (float) $now->average_percent;
         $averageBefore = $before?->average_percent === null ? null : (float) $before->average_percent;
 
+        // With quarters, count only work due this quarter. Days saved before
+        // quarter counts existed have no comparison to offer.
+        [$missing, $late, $missingBefore, $lateBefore] = $quarter === null
+            ? [$now->missing_count, $now->late_count, $before?->missing_count, $before?->late_count]
+            : [
+                AssignmentScore::missing()->where('student_id', $student->id)->dueIn($quarter)->count(),
+                AssignmentScore::late()->where('student_id', $student->id)->dueIn($quarter)->count(),
+                $before?->quarter_missing_count,
+                $before?->quarter_late_count,
+            ];
+
         return [
             'trend' => [
                 'since' => $since?->toDateString(),
                 'average' => $average,
                 'average_change' => $average === null || $averageBefore === null ? null : round($average - $averageBefore, 1),
-                'missing' => $now->missing_count,
-                'missing_before' => $before?->missing_count,
-                'late' => $now->late_count,
-                'late_before' => $before?->late_count,
+                'missing' => $missing,
+                'missing_before' => $missingBefore,
+                'late' => $late,
+                'late_before' => $lateBefore,
                 'verdict' => $before === null ? null : self::verdict(
                     $average === null || $averageBefore === null ? 0.0 : $average - $averageBefore,
-                    $now->missing_count - $before->missing_count,
+                    $missingBefore === null ? 0 : $missing - $missingBefore,
                 ),
             ],
             'classes' => $classes,

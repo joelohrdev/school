@@ -16,12 +16,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable $snapshot_on
  * @property int $missing_count
  * @property int $late_count
+ * @property int|null $quarter_missing_count missing work due in that day's quarter
+ * @property int|null $quarter_late_count
  * @property string|null $average_percent mean of the current class grades
  * @property int $graded_classes
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  */
-#[Fillable(['student_id', 'snapshot_on', 'missing_count', 'late_count', 'average_percent', 'graded_classes'])]
+#[Fillable(['student_id', 'snapshot_on', 'missing_count', 'late_count', 'quarter_missing_count', 'quarter_late_count', 'average_percent', 'graded_classes'])]
 class StudentSnapshot extends Model
 {
     protected function casts(): array
@@ -30,6 +32,8 @@ class StudentSnapshot extends Model
             'snapshot_on' => 'date',
             'missing_count' => 'integer',
             'late_count' => 'integer',
+            'quarter_missing_count' => 'integer',
+            'quarter_late_count' => 'integer',
             'graded_classes' => 'integer',
         ];
     }

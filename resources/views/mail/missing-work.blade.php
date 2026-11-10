@@ -11,7 +11,7 @@
 - **{{ $a['assignment_name'] }}** ({{ $a['course_name'] }}), due {{ $fmt($a['due_on'] ?? null) }}
 @endforeach
 
-{{ $k['name'] }} has {{ $k['still_missing_count'] }} missing {{ \Illuminate\Support\Str::plural('assignment', $k['still_missing_count']) }} in all.
+{{ $k['name'] }} has {{ $k['still_missing_count'] }} missing {{ \Illuminate\Support\Str::plural('assignment', $k['still_missing_count']) }} {{ ($k['quarter'] ?? null) ? 'in '.$k['quarter'] : 'in all' }}.
 
 @endforeach
 <x-mail::button :url="$dashboardUrl">

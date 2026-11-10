@@ -19,6 +19,7 @@ use App\Models\Teacher;
 use App\Models\Term;
 use App\Services\PowerSchool\Exceptions\AuthFailed;
 use App\Services\PowerSchool\Exceptions\PowerSchoolException;
+use App\Services\QuarterCalendar;
 use App\Services\SyncHealth\FailureNotifier;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -43,6 +44,7 @@ class SyncService
         private readonly CurrentGradeResolver $grades,
         private readonly ChangeDetector $changes,
         private readonly FailureNotifier $failures,
+        private readonly QuarterCalendar $quarters,
     ) {}
 
     public function run(bool $dryRun = false, string $trigger = SyncRun::TRIGGER_CLI): SyncResult
@@ -417,7 +419,11 @@ class SyncService
                 ->latest('snapshot_on')
                 ->first();
 
-            if ($alert = $this->changes->gradeChanged($student, $section, $previous, $current, $run, $baseline)) {
+            // A new term's grade starts fresh; comparing it with last term's isn't a drop.
+            $termStart = $current->reportingTerm?->starts_on?->toDateString();
+            $comparable = $previous !== null && ($termStart === null || $previous->snapshot_on->toDateString() >= $termStart) ? $previous : null;
+
+            if ($alert = $this->changes->gradeChanged($student, $section, $comparable, $current, $run, $baseline)) {
                 $counts->record('alerts', $alert);
             }
 
@@ -453,9 +459,13 @@ class SyncService
         $snapshot = StudentSnapshot::query()->where('student_id', $student->id)->whereDate('snapshot_on', $today)->first()
             ?? new StudentSnapshot(['student_id' => $student->id, 'snapshot_on' => $today]);
 
+        $quarter = $this->quarters->current($this->quarters->all($student), CarbonImmutable::parse($today));
+
         $snapshot->fill([
             'missing_count' => AssignmentScore::missing()->where('student_id', $student->id)->count(),
             'late_count' => AssignmentScore::late()->where('student_id', $student->id)->count(),
+            'quarter_missing_count' => $quarter === null ? null : AssignmentScore::missing()->where('student_id', $student->id)->dueIn($quarter)->count(),
+            'quarter_late_count' => $quarter === null ? null : AssignmentScore::late()->where('student_id', $student->id)->dueIn($quarter)->count(),
             'average_percent' => $grades->isEmpty() ? null : round($grades->avg(), 2),
             'graded_classes' => $grades->count(),
         ])->save();

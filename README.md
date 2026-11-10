@@ -38,6 +38,10 @@ Laravel 13, Inertia, React, TypeScript and Tailwind (React starter kit with Fort
   mixed or holding steady, from the class average and the missing count, plus a table of
   each class's grade and its change. Each sync saves the day's numbers in
   `student_snapshots` for this.
+- Both emails cover the current quarter only: news about work due in an earlier quarter
+  (a Q1 assignment graded late, say) is marked handled but not emailed. Missing counts
+  and trends compare within the quarter, and a new quarter's first grade is never
+  reported as a drop from last quarter's.
 - Any other sync (15:45, Sync now, the command without `--digest`) that finds newly
   missing work emails it right away. Each missing item is emailed once, and the 06:30 run
   only sends the digest. Turn it off with `POWERSCHOOL_MISSING_ALERT_EMAILS=false`.

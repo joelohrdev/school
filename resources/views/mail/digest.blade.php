@@ -15,6 +15,10 @@
 @foreach ($students as $s)
 ## {{ $s['name'] }}
 
+@if ($s['quarter'] ?? null)
+*{{ $s['quarter']['name'] }}, {{ $fmt($s['quarter']['startsOn']) }} to {{ $fmt($s['quarter']['endsOn']) }}. Only this quarter's work is included.*
+
+@endif
 @php
     $since = null;
 @endphp
@@ -62,7 +66,7 @@
 @if ($s['still_missing_count'] > 0)
 @php
     $o = $s['oldest_missing'];
-    $still = '**Still missing:** '.$s['still_missing_count'].' '.\Illuminate\Support\Str::plural('assignment', $s['still_missing_count']);
+    $still = '**Still missing'.(($s['quarter'] ?? null) ? ' this quarter' : '').':** '.$s['still_missing_count'].' '.\Illuminate\Support\Str::plural('assignment', $s['still_missing_count']);
     if ($o) {
         $still .= '. Oldest is '.e($o['assignment_name']).' ('.e($o['course_name']).'), due '.$fmt($o['due_on'])
             .($o['days_overdue'] ? ', '.$o['days_overdue'].' '.\Illuminate\Support\Str::plural('day', $o['days_overdue']).' overdue' : '');

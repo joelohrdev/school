@@ -48,7 +48,7 @@ it('emails newly missing work right after the afternoon sync, once', function ()
             && $mail->subjectLine() === 'Missing work: Avery has 1 new missing assignment'
             && str_contains($html, 'Cells unit test')
             && str_contains($html, 'due Thu Nov 5')
-            && str_contains($html, 'Avery has 2 missing assignments in all');
+            && str_contains($html, 'Avery has 2 missing assignments in Q2');
     });
     Mail::assertNotSent(DailyDigest::class);
 
@@ -102,4 +102,18 @@ it('names each kid in the subject when several have new missing work', function 
     ]);
 
     expect($mail->subjectLine())->toBe('Missing work: Avery 2 new, Blake 1 new');
+});
+
+it('does not email missing work from an earlier quarter', function () {
+    // Make the newly missing test due before Q2 began.
+    $data = powerschoolFixtureData('student_data');
+    $data['getStudentDataResponse']['return']['studentDataVOs'][0]['assignmentScores'][1]['missing'] = true;
+    $data['getStudentDataResponse']['return']['studentDataVOs'][0]['assignments'][1]['dueDate'] = '2026-10-01T00:00:00.000Z';
+    fakePowerSchoolSync($data);
+
+    $this->artisan('powerschool:sync --trigger=schedule')->assertSuccessful();
+
+    Mail::assertNotSent(MissingWorkAlert::class);
+    expect(Alert::where('type', Alert::TYPE_MISSING)->whereNotNull('alert_emailed_at')->count())->toBe(1)
+        ->and(Alert::where('type', Alert::TYPE_MISSING)->whereNull('alert_emailed_at')->count())->toBe(0);
 });

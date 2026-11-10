@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Quarter;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -65,5 +66,19 @@ class AssignmentScore extends Model
     public function scopeLate(Builder $query): void
     {
         $query->where('late', true)->where('exempt', false);
+    }
+
+    /**
+     * Only work due in the quarter; no quarter means the whole year.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeDueIn(Builder $query, ?Quarter $quarter): void
+    {
+        if ($quarter === null) {
+            return;
+        }
+
+        $query->whereHas('assignment', fn ($q) => $q->whereDate('due_on', '>=', $quarter->startsOn)->whereDate('due_on', '<=', $quarter->endsOn));
     }
 }

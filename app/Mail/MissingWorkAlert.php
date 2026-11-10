@@ -14,7 +14,7 @@ class MissingWorkAlert extends Mailable
     use Queueable, SerializesModels;
 
     /**
-     * @param  list<array{name: string, newly_missing: list<array<string, mixed>>, still_missing_count: int}>  $kids
+     * @param  list<array{name: string, quarter: string|null, newly_missing: list<array<string, mixed>>, still_missing_count: int}>  $kids
      */
     public function __construct(public array $kids) {}
 

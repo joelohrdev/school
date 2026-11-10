@@ -7,7 +7,8 @@ use App\Models\Alert;
 use Illuminate\Support\Facades\Mail;
 
 /**
- * Sends the digest only when there is news, then marks that news as sent.
+ * Sends the digest only when there is news about the current quarter, then
+ * marks that news as sent.
  */
 class DigestSender
 {
@@ -29,7 +30,10 @@ class DigestSender
 
         $digest = $this->builder->build();
 
-        if ($digest['alert_ids'] === []) {
+        if ($digest['shown'] === 0) {
+            // Anything left is about an earlier quarter: handled, not emailed.
+            Alert::whereIn('id', $digest['alert_ids'])->update(['notified_at' => now()]);
+
             return self::NO_CHANGES;
         }
 

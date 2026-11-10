@@ -3,7 +3,12 @@
 use App\Mail\DailyDigest;
 use App\Mail\MissingWorkAlert;
 use App\Models\Alert;
+use App\Models\Assignment;
+use App\Models\AssignmentScore;
+use App\Models\ReportingTerm;
+use App\Models\Section;
 use App\Models\Student;
+use App\Models\StudentSnapshot;
 use App\Services\Digest\DigestBuilder;
 use App\Services\Digest\DigestSender;
 use App\Services\PowerSchool\SyncService;
@@ -86,7 +91,7 @@ it('lists newly missing, still missing with the oldest, and grade drops', functi
 
         return str_contains($html, 'Avery')
             && str_contains($html, 'Cells unit test (Science 7), due Thu Nov 5')
-            && str_contains($html, 'Still missing:</strong> 2 assignments')
+            && str_contains($html, 'Still missing this quarter:</strong> 2 assignments')
             && str_contains($html, 'Oldest is Fractions worksheet (Math 7), due Tue Nov 3, 7 days overdue')
             && str_contains($html, 'Math 7: 74.5% → 69.5%')
             // Every kid gets trends, even one with no news.
@@ -178,3 +183,72 @@ it('decides better, worse, mixed and steady', function (float $average, int $mis
     'one of each' => [3.0, 2, 'mixed'],
     'small wobble' => [0.6, 0, 'steady'],
 ]);
+
+/** A Q1 term and a Math assignment due in it, so there's an earlier quarter to leave out. */
+function addEarlierQuarterWork(): Assignment
+{
+    ReportingTerm::create(['ps_id' => 76, 'abbreviation' => 'Q1', 'title' => 'Quarter 1', 'starts_on' => '2026-08-19', 'ends_on' => '2026-10-19']);
+    $math = Section::query()->where('course_name', 'Math 7')->firstOrFail();
+
+    return Assignment::create(['section_id' => $math->id, 'ps_id' => 9001, 'name' => 'Integers quiz', 'due_on' => '2026-09-15']);
+}
+
+it('leaves earlier quarters out of the digest', function () {
+    syncWithNews();
+    $q1 = addEarlierQuarterWork();
+    $avery = Student::query()->where('first_name', 'Avery')->firstOrFail();
+    AssignmentScore::create(['student_id' => $avery->id, 'assignment_id' => $q1->id, 'ps_id' => 9901, 'missing' => true]);
+    Alert::create(['student_id' => $avery->id, 'type' => Alert::TYPE_MISSING, 'payload' => [
+        'course_name' => 'Math 7', 'assignment_name' => 'Integers quiz', 'due_on' => '2026-09-15',
+    ]]);
+
+    expect(app(DigestSender::class)->send())->toBe(DigestSender::SENT);
+
+    Mail::assertSent(DailyDigest::class, function (DailyDigest $mail) {
+        $html = $mail->render();
+
+        return $mail->subjectLine() === 'School update: 1 newly missing, 1 grade drop'
+            && str_contains($html, 'Q2, Tue Oct 20 to Sat Dec 19')
+            && str_contains($html, 'Cells unit test')
+            && ! str_contains($html, 'Integers quiz')
+            && str_contains($html, 'Still missing this quarter:</strong> 2 assignments');
+    });
+
+    expect(Alert::unnotified()->count())->toBe(0);
+});
+
+it('sends no digest when the only news is from an earlier quarter, and marks it handled', function () {
+    fakePowerSchoolSync();
+    app(SyncService::class)->run();
+    addEarlierQuarterWork();
+    Alert::create(['student_id' => Student::firstOrFail()->id, 'type' => Alert::TYPE_SCORE_POSTED, 'payload' => [
+        'course_name' => 'Math 7', 'assignment_name' => 'Integers quiz', 'due_on' => '2026-09-15', 'score' => '9',
+    ]]);
+
+    expect(app(DigestSender::class)->send())->toBe(DigestSender::NO_CHANGES)
+        ->and(Alert::unnotified()->count())->toBe(0);
+    Mail::assertNothingSent();
+});
+
+it('does not call a new quarter\'s first grade a drop', function () {
+    fakePowerSchoolSync();
+    app(SyncService::class)->run();
+
+    // Q2 begins tomorrow with a fresh, lower grade.
+    ReportingTerm::query()->update(['starts_on' => '2026-11-10']);
+    $data = powerschoolFixtureData('student_data');
+    $data['getStudentDataResponse']['return']['studentDataVOs'][0]['finalGrades'][0]['percent'] = 60;
+    $data['getStudentDataResponse']['return']['studentDataVOs'][0]['reportingTerms'][0]['startDate'] = '2026-11-10T00:00:00.000Z';
+
+    $this->travel(1)->days();
+    fakePowerSchoolSync($data);
+    app(SyncService::class)->run();
+
+    expect(Alert::where('type', Alert::TYPE_GRADE_DROP)->count())->toBe(0);
+});
+
+it('compares missing work within the quarter only', function () {
+    syncWithNews();
+
+    expect(StudentSnapshot::query()->whereDate('snapshot_on', '2026-11-10')->where('student_id', Student::query()->where('first_name', 'Avery')->value('id'))->value('quarter_missing_count'))->toBe(2);
+});
