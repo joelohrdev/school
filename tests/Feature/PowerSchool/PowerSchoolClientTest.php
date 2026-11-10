@@ -118,6 +118,19 @@ describe('transport failures', function () {
         $this->client->login('u', 'p');
     })->throws(EndpointUnavailable::class, 'Could not connect');
 
+    it('says why the connection failed, without the password', function () {
+        Http::fake(['ps.example.test/*' => Http::failedConnection('cURL error 6: Could not resolve host: ps.example.test')]);
+
+        try {
+            $this->client->login('u', 'hunter2-secret');
+            $this->fail('Expected EndpointUnavailable');
+        } catch (EndpointUnavailable $e) {
+            expect($e->getMessage())
+                ->toBe('Could not connect to PowerSchool for loginToPublicPortal: cURL error 6: Could not resolve host: ps.example.test.')
+                ->not->toContain('hunter2-secret');
+        }
+    });
+
     it('raises UnexpectedPayload for non-JSON responses', function () {
         fakePowerSchool('<soap:Fault/>');
 

@@ -109,9 +109,11 @@ class PowerSchoolClient
                 ->withHeaders(['SOAPAction' => '"'.$method.'"'])
                 ->withBody($envelope, 'text/xml;charset=UTF-8')
                 ->post($this->baseUrl.$this->endpoint);
-        } catch (ConnectionException) {
+        } catch (ConnectionException $e) {
             // Also covers a digest probe the server answered without a challenge.
-            throw new EndpointUnavailable("Could not connect to PowerSchool for {$method}.");
+            // The reason (DNS, timeout, TLS, refused) is curl's message, which
+            // carries the URL but never the credentials or the body.
+            throw new EndpointUnavailable("Could not connect to PowerSchool for {$method}: ".self::reason($e));
         } catch (RequestException $e) {
             // Raised when the digest probe itself gets an error status.
             $response = $e->response;
@@ -160,5 +162,12 @@ class PowerSchoolClient
         }
 
         return null;
+    }
+
+    private static function reason(ConnectionException $e): string
+    {
+        $message = trim(preg_replace('/\s+/', ' ', $e->getMessage()) ?? '');
+
+        return $message === '' ? 'no reason given.' : rtrim(mb_strimwidth($message, 0, 300, '…'), '.').'.';
     }
 }
