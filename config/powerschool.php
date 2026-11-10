@@ -59,6 +59,9 @@ return [
 
     'digest_to' => env('MAIL_TO_PARENT'),
 
+    // Email MAIL_TO_PARENT right after a sync finds newly missing work.
+    'missing_alert_emails' => (bool) env('POWERSCHOOL_MISSING_ALERT_EMAILS', true),
+
     // Email MAIL_TO_PARENT once this many syncs in a row have failed.
     'failure_alert_after' => (int) env('POWERSCHOOL_FAILURE_ALERT_AFTER', 2),
 

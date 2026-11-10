@@ -37,6 +37,12 @@ class DigestSender
 
         Alert::whereIn('id', $digest['alert_ids'])->update(['notified_at' => now()]);
 
+        // The digest lists newly missing work, so it doesn't also need its own email.
+        Alert::whereIn('id', $digest['alert_ids'])
+            ->where('type', Alert::TYPE_MISSING)
+            ->whereNull('alert_emailed_at')
+            ->update(['alert_emailed_at' => now()]);
+
         return self::SENT;
     }
 }

@@ -18,11 +18,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $type
  * @property array<string, mixed> $payload
  * @property CarbonImmutable|null $read_at
- * @property CarbonImmutable|null $notified_at
+ * @property CarbonImmutable|null $notified_at in the morning digest
+ * @property CarbonImmutable|null $alert_emailed_at in its own missing-work email
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  */
-#[Fillable(['student_id', 'sync_run_id', 'type', 'payload', 'read_at', 'notified_at'])]
+#[Fillable(['student_id', 'sync_run_id', 'type', 'payload', 'read_at', 'notified_at', 'alert_emailed_at'])]
 class Alert extends Model
 {
     public const TYPE_MISSING = 'missing';
@@ -45,6 +46,7 @@ class Alert extends Model
             'payload' => 'array',
             'read_at' => 'datetime',
             'notified_at' => 'datetime',
+            'alert_emailed_at' => 'datetime',
         ];
     }
 

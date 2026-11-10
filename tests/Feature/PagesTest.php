@@ -161,7 +161,7 @@ it('runs a manual sync from the queued job and clears the busy flag', function (
     SyncPowerSchoolJob::queueOnce();
     expect(SyncPowerSchoolJob::isQueued())->toBeTrue();
 
-    (new SyncPowerSchoolJob)->handle(app(SyncService::class));
+    app()->call([new SyncPowerSchoolJob, 'handle']);
 
     expect(SyncRun::latest('id')->first()->trigger)->toBe(SyncRun::TRIGGER_MANUAL)
         ->and(SyncPowerSchoolJob::isQueued())->toBeFalse();

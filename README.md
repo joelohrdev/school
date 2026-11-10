@@ -34,6 +34,13 @@ Laravel 13, Inertia, React, TypeScript and Tailwind (React starter kit with Fort
 - The 06:30 run emails a digest to `MAIL_TO_PARENT` covering every alert not yet
   emailed: newly missing work, still missing (count and oldest), grade drops, attendance,
   teacher comments and new scores. No change, no email.
+- The digest opens each kid with a trend against a week earlier: getting better, worse,
+  mixed or holding steady, from the class average and the missing count, plus a table of
+  each class's grade and its change. Each sync saves the day's numbers in
+  `student_snapshots` for this.
+- Any other sync (15:45, Sync now, the command without `--digest`) that finds newly
+  missing work emails it right away. Each missing item is emailed once, and the 06:30 run
+  only sends the digest. Turn it off with `POWERSCHOOL_MISSING_ALERT_EMAILS=false`.
 - If syncing fails twice in a row (`POWERSCHOOL_FAILURE_ALERT_AFTER`), `MAIL_TO_PARENT`
   gets one email saying so, with the error. Without it, a broken sync just looks like a
   quiet day. It emails again only after a sync has succeeded in between.
@@ -65,6 +72,7 @@ Then edit `.env`:
 | `POWERSCHOOL_GRADE_DROP_THRESHOLD`              | points a class grade must fall to alert (default 3)                                  |
 | `MAIL_TO_PARENT`                                | where the digest and sync-failure emails go; leave blank to disable both             |
 | `POWERSCHOOL_FAILURE_ALERT_AFTER`               | failed syncs in a row before the failure email (default 2)                           |
+| `POWERSCHOOL_MISSING_ALERT_EMAILS`              | email newly missing work right after a sync (default true)                           |
 | `BACKUP_DISKS`                                  | comma-separated disks for nightly backups (default `local`), see below               |
 | `BACKUP_KEEP`                                   | backups kept on each disk (default 14)                                               |
 | `MAIL_MAILER` etc.                              | a real mailer in production; `log` locally writes mail to `storage/logs/laravel.log` |

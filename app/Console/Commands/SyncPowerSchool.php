@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\NotInSessionDay;
 use App\Models\SyncRun;
 use App\Services\Digest\DigestSender;
+use App\Services\Digest\MissingWorkNotifier;
 use App\Services\PowerSchool\SyncService;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
@@ -18,7 +19,7 @@ class SyncPowerSchool extends Command
 
     protected $description = "Pull the kids' grades, assignments and missing work from PowerSchool";
 
-    public function handle(SyncService $sync, DigestSender $digest): int
+    public function handle(SyncService $sync, DigestSender $digest, MissingWorkNotifier $missing): int
     {
         $trigger = (string) $this->option('trigger');
 
@@ -58,6 +59,11 @@ class SyncPowerSchool extends Command
                 DigestSender::NO_CHANGES => 'No changes; no digest sent.',
                 default => 'MAIL_TO_PARENT is not set; no digest sent.',
             });
+        }
+
+        // After the digest, which covers any newly missing work it lists.
+        if (! $result->dryRun && $result->status !== SyncRun::STATUS_SKIPPED && $missing->send() === MissingWorkNotifier::SENT) {
+            $this->line('Missing-work email sent.');
         }
 
         return $result->status === SyncRun::STATUS_FAILED ? self::FAILURE : self::SUCCESS;

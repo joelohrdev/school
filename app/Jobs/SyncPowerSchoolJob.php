@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\SyncRun;
+use App\Services\Digest\MissingWorkNotifier;
 use App\Services\PowerSchool\SyncService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -45,10 +46,14 @@ class SyncPowerSchoolJob implements ShouldQueue
         return Cache::has(self::QUEUED_KEY);
     }
 
-    public function handle(SyncService $sync): void
+    public function handle(SyncService $sync, MissingWorkNotifier $missing): void
     {
         try {
-            $sync->run(trigger: SyncRun::TRIGGER_MANUAL);
+            $result = $sync->run(trigger: SyncRun::TRIGGER_MANUAL);
+
+            if ($result->status !== SyncRun::STATUS_SKIPPED) {
+                $missing->send();
+            }
         } finally {
             Cache::forget(self::QUEUED_KEY);
         }
