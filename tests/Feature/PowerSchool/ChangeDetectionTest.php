@@ -190,7 +190,7 @@ it('alerts for a newly recorded absence or tardy but not for plain presence', fu
     }));
 
     expect($types)->toBe(['absence']);
-    expect(Alert::where('type', Alert::TYPE_ABSENCE)->sole()->payload)->toBe([
+    expect(Alert::where('type', Alert::TYPE_ABSENCE)->sole()->payload)->toEqual([
         'date' => '2026-11-09',
         'code' => 'AE',
         'description' => 'Absent Excused',

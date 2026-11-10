@@ -2,6 +2,7 @@
 
 use App\Mail\DailyDigest;
 use App\Models\Alert;
+use App\Models\Student;
 use App\Services\Digest\DigestSender;
 use App\Services\PowerSchool\SyncService;
 use Carbon\CarbonImmutable;
@@ -93,7 +94,7 @@ it('lists newly missing, still missing with the oldest, and grade drops', functi
 it('sends the digest from the command only with --digest', function () {
     fakePowerSchoolSync();
     app(SyncService::class)->run();
-    Alert::create(['student_id' => 1, 'type' => Alert::TYPE_MISSING, 'payload' => [
+    Alert::create(['student_id' => Student::firstOrFail()->id, 'type' => Alert::TYPE_MISSING, 'payload' => [
         'course_name' => 'Math 7', 'assignment_name' => 'Worksheet', 'due_on' => '2026-11-03',
     ]]);
 
