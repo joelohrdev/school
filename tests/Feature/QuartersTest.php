@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Assignment;
+use App\Models\AssignmentScore;
 use App\Models\FinalGrade;
 use App\Models\ReportingTerm;
 use App\Models\SchoolQuarter;
@@ -141,3 +142,16 @@ it('rejects overlapping or backwards quarters', function (array $quarters, strin
         ['name' => 'q1', 'starts_on' => '2026-09-02', 'ends_on' => '2026-10-01'],
     ], 'quarters.1.name'],
 ]);
+
+it('keeps the overview to the current quarter', function () {
+    $math = addFirstQuarter();
+    $q1Work = Assignment::query()->where('name', 'Integers quiz')->firstOrFail();
+    AssignmentScore::create(['student_id' => $math->student_id, 'assignment_id' => $q1Work->id, 'ps_id' => 9901, 'missing' => true, 'late' => true]);
+
+    $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+        ->where('students.0.quarter.name', 'Q2')
+        ->where('students.0.missingCount', 1)
+        ->where('students.0.lateCount', 1)
+        ->where('students.0.missing.0.name', 'Fractions worksheet')
+        ->where('students.0.classes.0.percent', 74.5));
+});

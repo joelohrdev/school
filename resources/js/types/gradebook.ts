@@ -58,6 +58,8 @@ export type StudentRef = {
 };
 
 export type StudentSummary = StudentRef & {
+    /** The quarter everything on the card is about, when quarters are known. */
+    quarter: QuarterOption | null;
     missingCount: number;
     lateCount: number;
     missing: MissingItem[];

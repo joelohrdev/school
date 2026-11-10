@@ -46,20 +46,24 @@ class Gradebook
     }
 
     /**
+     * The overview card for a kid. With a quarter, everything on it is about
+     * that quarter: its grades, work due in it, and the average since it began.
+     *
      * @return array<string, mixed>
      */
-    public function summary(Student $student): array
+    public function summary(Student $student, ?Quarter $quarter = null): array
     {
-        $missing = $this->missingWork($student);
+        $missing = $this->missingWork($student, $quarter);
 
         return [
             ...$this->student($student),
+            'quarter' => $quarter?->toArray(),
             'missingCount' => count($missing),
-            'lateCount' => AssignmentScore::late()->where('student_id', $student->id)->count(),
+            'lateCount' => AssignmentScore::late()->where('student_id', $student->id)->dueIn($quarter)->count(),
             'missing' => $missing,
-            'upcoming' => $this->upcoming($student),
-            'averageTrend' => $this->averageTrend($student),
-            'classes' => $this->classes($student),
+            'upcoming' => $this->upcoming($student, $quarter),
+            'averageTrend' => $this->averageTrend($student, $quarter),
+            'classes' => $this->classes($student, $quarter),
         ];
     }
 
@@ -136,12 +140,13 @@ class Gradebook
      *
      * @return list<array<string, mixed>>
      */
-    public function missingWork(Student $student): array
+    public function missingWork(Student $student, ?Quarter $quarter = null): array
     {
         $today = $this->today();
 
         return array_values(AssignmentScore::missing()
             ->where('student_id', $student->id)
+            ->dueIn($quarter)
             ->with('assignment.section')
             ->get()
             ->sortBy(fn (AssignmentScore $s) => $s->assignment->due_on?->getTimestamp() ?? PHP_INT_MAX)
@@ -180,16 +185,16 @@ class Gradebook
     }
 
     /**
-     * The class average over the trend window, shaped like a class's trend
-     * so the same sparkline draws it.
+     * The class average over the last month, or since the quarter began,
+     * shaped like a class's trend so the same sparkline draws it.
      *
      * @return list<array{date: string, percent: float|null}>
      */
-    public function averageTrend(Student $student): array
+    public function averageTrend(Student $student, ?Quarter $quarter = null): array
     {
         return array_map(
             fn (array $row) => ['date' => $row['date'], 'percent' => $row['average']],
-            $this->history($student, self::TREND_DAYS),
+            $quarter === null ? $this->history($student, self::TREND_DAYS) : $this->history($student, quarter: $quarter),
         );
     }
 
@@ -199,13 +204,18 @@ class Gradebook
      *
      * @return list<array<string, mixed>>
      */
-    public function upcoming(Student $student): array
+    public function upcoming(Student $student, ?Quarter $quarter = null): array
     {
         $today = $this->today();
+        $until = $today->addDays(self::UPCOMING_DAYS)->toDateString();
+
+        if ($quarter !== null && $quarter->endsOn < $until) {
+            $until = $quarter->endsOn;
+        }
 
         return array_values(Assignment::query()
             ->whereIn('section_id', $student->sections()->select('id'))
-            ->whereBetween('due_on', [$today->toDateString(), $today->addDays(self::UPCOMING_DAYS)->toDateString()])
+            ->whereBetween('due_on', [$today->toDateString(), $until])
             ->with(['section', 'score'])
             ->orderBy('due_on')
             ->orderBy('name')

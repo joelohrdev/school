@@ -91,6 +91,10 @@ function StudentSheet({ student }: { student: StudentSummary }) {
                         {student.name}
                     </Link>
                 }
+                sub={
+                    student.quarter &&
+                    `${student.quarter.name}, ${formatShortDay(student.quarter.startsOn)} to ${formatShortDay(student.quarter.endsOn)}`
+                }
                 aside={
                     clear ? (
                         <span className="text-sm text-good">
