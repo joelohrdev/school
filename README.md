@@ -137,8 +137,13 @@ scheduler toggle that adds the cron:
 
 PowerSchool only shows the current state, so this database is the only copy of the
 grade history and the trend charts. `backup:database` runs nightly and writes a
-consistent copy of the SQLite file, gzipped and encrypted with `APP_KEY`, to each disk in
-`BACKUP_DISKS`, keeping the newest `BACKUP_KEEP`.
+consistent copy of the database, gzipped and encrypted with `APP_KEY`, to each disk in
+`BACKUP_DISKS`, keeping the newest `BACKUP_KEEP`:
+
+- **SQLite:** a copy of the database file (`.sqlite.gz.enc`).
+- **MySQL or MariaDB:** a `mysqldump` taken in one transaction (`.sql.gz.enc`). The
+  `mysqldump` binary must be on the server (it is on Forge). Point `BACKUP_MYSQLDUMP` at
+  it if it isn't on the `PATH`.
 
 The default `local` disk (`storage/app/private/backups`) sits on the same server, so it
 won't survive losing the server. Add an off-server disk: configure `s3` in `.env`
@@ -148,13 +153,11 @@ won't survive losing the server. Add an off-server disk: configure `s3` in `.env
 opened without it. To restore one:
 
 ```bash
-php artisan backup:decrypt storage/app/private/backups/kids-tracker-2026-11-09-083000.sqlite.gz.enc /tmp/restored.sqlite
+php artisan backup:decrypt storage/app/private/backups/kids-tracker-2026-11-09-083000.sql.gz.enc /tmp/restore.sql
 ```
 
-Then stop the app and copy the file over `database/database.sqlite`.
-
-`backup:database` only handles SQLite. With MySQL or Postgres, use your host's
-database backups.
+For MySQL, load the dump with `mysql -u <user> -p <database> < /tmp/restore.sql`. For
+SQLite, stop the app and copy the restored file over the live database file.
 
 ## Phone home screen
 

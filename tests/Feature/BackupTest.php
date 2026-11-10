@@ -4,12 +4,17 @@ use App\Console\Commands\BackupDatabase;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 // VACUUM INTO can't run inside the transaction RefreshDatabase wraps each test in.
 uses(DatabaseMigrations::class);
 
 beforeEach(function () {
+    if (DB::connection()->getDriverName() !== 'sqlite') {
+        $this->markTestSkipped('These cover the SQLite path; BackupMysqlTest covers MySQL.');
+    }
+
     Storage::fake('local');
     Storage::fake('offsite');
     config(['backup.disks' => ['local', 'offsite'], 'backup.path' => 'backups', 'backup.keep' => 14]);

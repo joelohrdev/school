@@ -9,7 +9,7 @@ return [
     |
     | PowerSchool only shows today's state, so this database is the only copy
     | of the grade history. `backup:database` writes a compressed, encrypted
-    | copy (with APP_KEY) to each disk below and keeps the newest `keep`.
+    | copy (with APP_KEY; a SQLite file or a mysqldump) to each disk below and keeps the newest `keep`.
     |
     | Add an off-server disk from config/filesystems.php (s3 works with any
     | S3-compatible storage) so a lost server doesn't take the backups too.
@@ -24,5 +24,8 @@ return [
     'path' => env('BACKUP_PATH', 'backups'),
 
     'keep' => (int) env('BACKUP_KEEP', 14),
+
+    // Used when the database is MySQL or MariaDB.
+    'mysqldump' => env('BACKUP_MYSQLDUMP', 'mysqldump'),
 
 ];
