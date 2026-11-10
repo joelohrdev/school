@@ -167,6 +167,7 @@ MAIL_FROM_NAME="Kids Tracker"
 MAIL_TO_PARENT=you@...
 
 BACKUP_DISKS=local       # local,s3 once AWS_* is set
+DB_QUEUE_RETRY_AFTER=330 # longer than the queue worker's 300s timeout
 ```
 
 Leave `REGISTRATION_OPEN` unset so registration stays closed. **Save `APP_KEY` in a
