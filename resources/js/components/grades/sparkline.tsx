@@ -22,16 +22,12 @@ export function Sparkline({
     );
 
     if (values.length < 2) {
+        // Keeps the column's width so grades beside it still line up.
         return (
             <span
-                className={cn(
-                    'inline-block w-[72px] text-right text-xs text-muted-foreground',
-                    className,
-                )}
-                title="Trend appears after a couple of days of syncs"
-            >
-                —
-            </span>
+                className={cn('inline-block w-[72px]', className)}
+                aria-hidden
+            />
         );
     }
 

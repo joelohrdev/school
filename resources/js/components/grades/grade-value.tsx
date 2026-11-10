@@ -30,15 +30,21 @@ export function GradeValue({
     size?: 'md' | 'lg';
     className?: string;
 }) {
+    const lg = size === 'lg';
+
     if (percent === null && letter === null) {
         return (
-            <span className={cn('text-sm text-muted-foreground', className)}>
+            <span
+                className={cn(
+                    'inline-flex items-center text-sm text-muted-foreground',
+                    lg ? 'h-20' : 'h-9',
+                    className,
+                )}
+            >
                 No grade
             </span>
         );
     }
-
-    const lg = size === 'lg';
 
     return (
         <span
@@ -48,6 +54,7 @@ export function GradeValue({
                 className,
             )}
         >
+            {!letter && !lg && <span className="w-11 shrink-0" aria-hidden />}
             {letter && (
                 <span
                     className={cn(
@@ -77,7 +84,7 @@ export function GradeValue({
             <span
                 className={cn(
                     'text-muted-foreground',
-                    lg ? 'text-2xl font-semibold' : 'text-sm',
+                    lg ? 'text-2xl font-semibold' : 'w-12 text-right text-sm',
                 )}
             >
                 {formatPercent(percent)}

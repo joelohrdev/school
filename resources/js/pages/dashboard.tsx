@@ -281,7 +281,7 @@ function AverageLine({ trend }: { trend: TrendPoint[] }) {
                         {formatPercent(now.percent)}
                     </span>
                 </span>
-                <Sparkline points={trend} />
+                {values.length > 1 && <Sparkline points={trend} />}
                 {change !== null && (
                     <span className="text-xs text-muted-foreground">
                         {change === 0

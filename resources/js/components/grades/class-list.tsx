@@ -17,6 +17,12 @@ export function ClassList({
         return <Blank>No classes yet. They appear after the first sync.</Blank>;
     }
 
+    // Early in a quarter no class has a trend yet; drop the column rather
+    // than leave a row of gaps.
+    const showTrend = classes.some(
+        (c) => c.trend.filter((p) => p.percent !== null).length > 1,
+    );
+
     return (
         <ul>
             {classes.map((c) => (
@@ -41,7 +47,7 @@ export function ClassList({
                                 )}
                             </div>
                         </div>
-                        <Sparkline points={c.trend} />
+                        {showTrend && <Sparkline points={c.trend} />}
                         <GradeValue
                             percent={c.percent}
                             letter={c.letter}
