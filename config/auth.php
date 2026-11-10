@@ -15,6 +15,19 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Registration
+    |--------------------------------------------------------------------------
+    |
+    | This app has one account. Registration is only ever open while no account
+    | exists, and in production only when REGISTRATION_OPEN=true, so nobody can
+    | claim the account before you do. Create it with `php artisan user:create`.
+    |
+    */
+
+    'registration_open' => (bool) env('REGISTRATION_OPEN', env('APP_ENV', 'production') !== 'production'),
+
     'defaults' => [
         'guard' => env('AUTH_GUARD', 'web'),
         'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),

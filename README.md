@@ -9,8 +9,8 @@ Laravel 13, Inertia, React, TypeScript and Tailwind (React starter kit with Fort
 > **Security:** this app stores minors' school records: grades, attendance, teacher
 > comments and, in encrypted raw payloads, their full PowerSchool record. Keep it
 > behind login, on a private server, with HTTPS. Don't put it on public or shared
-> hosting, and don't commit real data. Registration closes once the first account
-> exists, so nobody else can sign up.
+> hosting, and don't commit real data. In production nobody can register: create the one
+> account with `php artisan user:create`.
 
 ## How it works
 
@@ -73,9 +73,22 @@ The mobile-app digest credentials (`pearson` / `m0bApP5`) are public, static val
 baked into the old app. They're defaults in `config/powerschool.php` and can be
 overridden with `POWERSCHOOL_DIGEST_USERNAME` / `POWERSCHOOL_DIGEST_PASSWORD`.
 
-Open the site and register. The first account is the only one allowed. Accounts must
-verify their email: with `MAIL_MAILER=log` the verification link is in
-`storage/logs/laravel.log`.
+Create the account from the command line. It's the only one allowed, and it's created
+already verified:
+
+```bash
+php artisan user:create
+```
+
+Do this on the server right after the first deploy. In production the registration page
+stays closed (`REGISTRATION_OPEN` defaults to false), so nobody can claim the account from
+the public URL before you do. Locally it's open until the first account exists; with
+`MAIL_MAILER=log` the email verification link is in `storage/logs/laravel.log`.
+
+Then turn on two-factor sign-in under Settings, Security.
+
+Inertia server-side rendering is off (`INERTIA_SSR_ENABLED`): the app ships no SSR bundle,
+so there's no SSR process to run on the server.
 
 ## Running a sync
 
@@ -179,7 +192,7 @@ Pest tests cover:
 - the digest and the sync-failure email
 - backups and restoring them
 - the pages
-- the registration lock
+- the registration lock and `user:create`
 
 They use `Http::fake` with the sanitized fixtures in `tests/Fixtures/PowerSchool`.
 **Never put real student data in fixtures.** The real response dump belongs in

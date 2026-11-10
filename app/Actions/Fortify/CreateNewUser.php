@@ -34,8 +34,12 @@ class CreateNewUser implements CreatesNewUsers
         ]);
     }
 
+    /**
+     * Open only while no account exists, and in production only when
+     * REGISTRATION_OPEN=true. See config/auth.php.
+     */
     public static function registrationOpen(): bool
     {
-        return ! User::query()->exists();
+        return (bool) config('auth.registration_open') && ! User::query()->exists();
     }
 }

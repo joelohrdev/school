@@ -63,4 +63,21 @@ class RegistrationTest extends TestCase
 
         $this->get(route('login'))->assertInertia(fn ($page) => $page->where('canRegister', false));
     }
+
+    public function test_registration_stays_closed_when_disabled_even_with_no_account()
+    {
+        config(['auth.registration_open' => false]);
+
+        $this->get(route('register'))->assertRedirect(route('login'));
+        $this->get(route('login'))->assertInertia(fn ($page) => $page->where('canRegister', false));
+
+        $this->post(route('register.store'), [
+            'name' => 'Stranger',
+            'email' => 'stranger@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertForbidden();
+
+        $this->assertSame(0, User::count());
+    }
 }
